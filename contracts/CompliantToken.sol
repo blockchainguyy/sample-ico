@@ -66,6 +66,13 @@ contract CompliantToken is Validator, MintableToken {
 
     event FeeRecipientSet(address indexed previousRecipient, address indexed newRecipient);
 
+    constructor(address _owner)
+        public 
+        MintableToken(_owner)
+        Validator()
+    {
+    }
+
     function setWhitelistContract(address whitelistAddress)
         external
         onlyValidator

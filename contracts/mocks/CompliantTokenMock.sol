@@ -6,8 +6,7 @@ import "../CompliantToken.sol";
 contract CompliantTokenMock is CompliantToken {
     constructor(address _owner, uint initialBalance)
         public 
-        MintableToken(_owner)
-        Validator()
+        CompliantToken(_owner)
     {
         balances[_owner] = initialBalance;
         totalSupply_ = initialBalance;
