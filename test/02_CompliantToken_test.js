@@ -4,10 +4,8 @@ import latestTime from "./helpers/latestTime";
 import log from "./helpers/logger";
 import VMExceptionRevert from "./helpers/VMExceptionRevert";
 
-const ApprovedInvestors = artifacts.require("ApprovedInvestors");
-const Token = artifacts.require(
-  "TransactionApprovalApprovedInvestorTokenWithFeesMock"
-);
+const Whitelist = artifacts.require("Whitelist");
+const Token = artifacts.require("CompliantTokenMock");
 
 const BigNumber = web3.BigNumber;
 const should = require("chai")
@@ -15,7 +13,7 @@ const should = require("chai")
   .use(require("chai-bignumber")(BigNumber))
   .should();
 
-contract("TransactionApprovalApprovedInvestorTokenWithFees", function([
+contract("CompliantToken", function([
   owner,
   feeRecipient,
   newFeeRecipient,
@@ -34,13 +32,13 @@ contract("TransactionApprovalApprovedInvestorTokenWithFees", function([
   });
 
   beforeEach(async function() {
-    this.whitelisting = await ApprovedInvestors.new();
+    this.whitelisting = await Whitelist.new();
     this.token = await Token.new(owner, tokensForOwner);
 
-    const tx1 = await this.token.setApprovedInvestorsContract(
+    const tx1 = await this.token.setWhitelistContract(
       this.whitelisting.address
     );
-    log(`setApprovedInvestorsContract gasUsed: ${tx1.receipt.gasUsed}`);
+    log(`setWhitelistContract gasUsed: ${tx1.receipt.gasUsed}`);
 
     const tx2 = await this.token.setFee(transferFee);
     log(`setFee gasUsed: ${tx2.receipt.gasUsed}`);
@@ -67,15 +65,15 @@ contract("TransactionApprovalApprovedInvestorTokenWithFees", function([
     (await this.token.totalSupply()).should.be.bignumber.equal(tokensForOwner);
   });
 
-  describe("setApprovedInvestorsContract", function() {
+  describe("setWhitelistContract", function() {
     it("should be able to change whitelisting contract", async function() {
-      const newWhitelisting = await ApprovedInvestors.new();
+      const newWhitelisting = await Whitelist.new();
 
-      const { receipt } = await this.token.setApprovedInvestorsContract(
+      const { receipt } = await this.token.setWhitelistContract(
         newWhitelisting.address,
-        { from: owner }
+        { from: validator }
       ).should.be.fulfilled;
-      log(`setApprovedInvestorsContract gasUsed: ${receipt.gasUsed}`);
+      log(`setWhitelistContract gasUsed: ${receipt.gasUsed}`);
 
       (await this.token.whiteListingContract()).should.equal(
         newWhitelisting.address
@@ -84,28 +82,28 @@ contract("TransactionApprovalApprovedInvestorTokenWithFees", function([
 
     it("should not accept address(0)", async function() {
       await this.token
-        .setApprovedInvestorsContract("0x0", { from: owner })
+        .setWhitelistContract("0x0", { from: validator })
         .should.be.rejectedWith(VMExceptionRevert);
     });
 
-    it("should reject if called by non owner", async function() {
-      const newWhitelisting = await ApprovedInvestors.new();
+    it("should reject if not called by validator", async function() {
+      const newWhitelisting = await Whitelist.new();
 
       await this.token
-        .setApprovedInvestorsContract(newWhitelisting.address, {
-          from: feeRecipient
+        .setWhitelistContract(newWhitelisting.address, {
+          from: owner
         })
         .should.be.rejectedWith(VMExceptionRevert);
     });
 
     it("should log event", async function() {
-      const newWhitelisting = await ApprovedInvestors.new();
+      const newWhitelisting = await Whitelist.new();
 
-      const tx = await this.token.setApprovedInvestorsContract(
+      const tx = await this.token.setWhitelistContract(
         newWhitelisting.address,
-        { from: owner }
+        { from: validator }
       ).should.be.fulfilled;
-      log(`setApprovedInvestorsContract gasUsed: ${tx.receipt.gasUsed}`);
+      log(`setWhitelistContract gasUsed: ${tx.receipt.gasUsed}`);
 
       const event = tx.logs.find(e => e.event === "WhiteListingContractSet");
 
@@ -117,7 +115,7 @@ contract("TransactionApprovalApprovedInvestorTokenWithFees", function([
   describe("setFeeRecipient", function() {
     it("should be able to change fee Recipient", async function() {
       const { receipt } = await this.token.setFeeRecipient(newFeeRecipient, {
-        from: owner
+        from: validator
       }).should.be.fulfilled;
       log(`setFeeRecipient gasUsed: ${receipt.gasUsed}`);
 
@@ -127,22 +125,22 @@ contract("TransactionApprovalApprovedInvestorTokenWithFees", function([
     it("should not accept address(0)", async function() {
       await this.token
         .setFeeRecipient("0x0", {
-          from: owner
+          from: validator
         })
         .should.be.rejectedWith(VMExceptionRevert);
     });
 
-    it("should reject if called by non owner", async function() {
+    it("should reject if not called by validator", async function() {
       await this.token
         .setFeeRecipient("0x0", {
-          from: feeRecipient
+          from: owner
         })
         .should.be.rejectedWith(VMExceptionRevert);
     });
 
     it("should log event", async function() {
       const tx = await this.token.setFeeRecipient(newFeeRecipient, {
-        from: owner
+        from: validator
       }).should.be.fulfilled;
       log(`setFeeRecipient gasUsed: ${tx.receipt.gasUsed}`);
 
@@ -225,7 +223,8 @@ contract("TransactionApprovalApprovedInvestorTokenWithFees", function([
       pendingTransaction1[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction1[3].should.be.bignumber.equal(transferFee);
 
-      const tx2 = await this.token.approveTransfer(0, {from: validator}).should.be.fulfilled;
+      const tx2 = await this.token.approveTransfer(0, { from: validator })
+        .should.be.fulfilled;
       log(`approveTransfer gasUsed: ${tx2.receipt.gasUsed}`);
 
       const tx3 = await this.token.transfer(
