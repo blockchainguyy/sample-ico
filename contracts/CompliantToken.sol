@@ -163,6 +163,13 @@ contract CompliantToken is Validator, MintableToken {
             balances[pendingTransactions[nonce].to] = balances[pendingTransactions[nonce].to]
                 .add(pendingTransactions[nonce].value);
 
+            if (pendingTransactions[nonce].spender != address(0)) {
+                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
+                    .sub(pendingTransactions[nonce].value);
+            } 
+            pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
+                .sub(pendingTransactions[nonce].value);
+
             emit TransferWithFee(
                 pendingTransactions[nonce].from,
                 pendingTransactions[nonce].to,
@@ -175,6 +182,13 @@ contract CompliantToken is Validator, MintableToken {
             balances[pendingTransactions[nonce].to] = balances[pendingTransactions[nonce].to]
                 .add(pendingTransactions[nonce].value);
             balances[feeRecipient] = balances[feeRecipient].add(pendingTransactions[nonce].fee);
+
+            if (pendingTransactions[nonce].spender != address(0)) {
+                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
+                    .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
+            }
+            pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
+                .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
 
             emit TransferWithFee(
                 pendingTransactions[nonce].from,
@@ -189,20 +203,6 @@ contract CompliantToken is Validator, MintableToken {
             pendingTransactions[nonce].to,
             pendingTransactions[nonce].value
         );
-        
-        if (pendingTransactions[nonce].spender != 0x0) {
-            if (pendingTransactions[nonce].from == feeRecipient) {
-                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                    .sub(pendingTransactions[nonce].value);
-                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                    .sub(pendingTransactions[nonce].value);
-            } else {
-                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                    .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
-                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                    .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
-            }
-        }
 
         delete pendingTransactions[nonce];
         return true;
@@ -212,14 +212,12 @@ contract CompliantToken is Validator, MintableToken {
         onlyValidator
         checkIsAddressValid(pendingTransactions[nonce].from)
     {        
-        if (pendingTransactions[nonce].spender != address(0)) {
-            if (pendingTransactions[nonce].from == feeRecipient) {
-                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                    .sub(pendingTransactions[nonce].value);
-            } else {
-                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                    .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
-            }
+        if (pendingTransactions[nonce].from == feeRecipient) {
+            pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
+                .sub(pendingTransactions[nonce].value);
+        } else {
+            pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
+                .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
         }
         
         emit TransferRejected(
