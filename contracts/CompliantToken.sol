@@ -165,6 +165,14 @@ contract CompliantToken is Validator, MintableToken {
             );
         }
 
+        if (pendingTransactions[nonce].isTransferFrom) {
+            (pendingTransactions[nonce].from == feeRecipient) ? 
+                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                .sub(pendingTransactions[nonce].value).add(pendingTransactions[nonce].fee) :
+                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                .sub(pendingTransactions[nonce].value);
+        }
+
         delete pendingTransactions[nonce];
         return true;
     }
