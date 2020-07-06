@@ -604,6 +604,57 @@ contract("CompliantToken", function([
       pendingTransaction[3].should.be.bignumber.equal(new BigNumber(0));
     });
 
+    it("should decrease pending approval amount when using transfer", async function() {
+
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, "0x0000000000000000000000000000000000000000");
+
+      const tx = await this.token.approveTransfer(0, { from: validator }).should
+        .be.fulfilled;
+      log(`approveTransfer gasUsed: ${tx.receipt.gasUsed}`);
+
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, "0x0000000000000000000000000000000000000000");
+
+      pendingApprovalAmountBefore
+        .sub(transferFee)
+        .sub(allowedTransferAmount)
+        .should.be.bignumber.equal(pendingApprovalAmountAfter)
+    });
+
+    it("should decrease pending approval amount when using transferFrom", async function() {
+      const tx = await this.token.approve(
+        approvedAddress,
+        allowedTransferAmount.add(transferFee),
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`approveAmount gasUsed: ${tx.receipt.gasUsed}`);
+
+      const tx1 = await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        allowedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.fulfilled;
+      log(`transferFrom gasUsed: ${tx1.receipt.gasUsed}`);
+
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, approvedAddress);
+
+      const tx2 = await this.token.approveTransfer(1, this.reason, {
+        from: validator
+      }).should.be.fulfilled;
+      log(`approveTransfer gasUsed: ${tx2.receipt.gasUsed}`);
+
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, approvedAddress);
+
+      pendingApprovalAmountBefore
+        .sub(transferFee)
+        .sub(allowedTransferAmount)
+        .should.be.bignumber.equal(pendingApprovalAmountAfter)
+    });
+
     it("should increment balance of reciever", async function() {
       const tx = await this.token.approveTransfer(0, { from: validator }).should
         .be.fulfilled;
