@@ -224,7 +224,7 @@ contract("CompliantToken", function([
       pendingTransaction1[1].should.equal(feeRecipient);
       pendingTransaction1[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction1[3].should.be.bignumber.equal(transferFee);
-      pendingTransaction1[4].should.equal(false);
+      pendingTransaction1[4].should.equal('0x0000000000000000000000000000000000000000');
 
       const tx2 = await this.token.approveTransfer(0, { from: validator })
         .should.be.fulfilled;
@@ -245,7 +245,7 @@ contract("CompliantToken", function([
       pendingTransaction2[1].should.equal(approvedAddress);
       pendingTransaction2[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction2[3].should.be.bignumber.equal(transferFee);
-      pendingTransaction2[4].should.equal(false);
+      pendingTransaction2[4].should.equal('0x0000000000000000000000000000000000000000');
     });
 
     it("should have an address(0) check", async function() {
@@ -320,7 +320,7 @@ contract("CompliantToken", function([
       event.args.to.should.equal(feeRecipient);
       event.args.value.should.be.bignumber.equal(allowedTransferAmount);
       event.args.fee.should.be.bignumber.equal(transferFee);
-      event.args.isTransferFrom.should.equal(false);
+      event.args.spender.should.equal('0x0000000000000000000000000000000000000000');
     });
   });
 
@@ -342,7 +342,7 @@ contract("CompliantToken", function([
       log(`approveInvestor for gasUsed: ${tx3.receipt.gasUsed}`);
 
       const tx4 = await this.token.approve(
-        feeRecipient,
+        approvedAddress,
         allowedTransferAmount.add(transferFee).add(transferFee),
         {
           from: owner
@@ -351,7 +351,7 @@ contract("CompliantToken", function([
       log(`approveAmount for gasUsed: ${tx4.receipt.gasUsed}`);
 
       const tx5 = await this.token.approve(
-        approvedAddress,
+        owner,
         allowedTransferAmount,
         {
           from: feeRecipient
@@ -377,7 +377,7 @@ contract("CompliantToken", function([
       pendingTransaction1[1].should.equal(feeRecipient);
       pendingTransaction1[2].should.be.bignumber.equal(approvedTransferAmount);
       pendingTransaction1[3].should.be.bignumber.equal(transferFee);
-      pendingTransaction1[4].should.equal(true);
+      pendingTransaction1[4].should.equal(approvedAddress);
 
       const tx2 = await this.token.approveTransfer(0, { from: validator })
         .should.be.fulfilled;
@@ -399,7 +399,7 @@ contract("CompliantToken", function([
       pendingTransaction2[1].should.equal(approvedAddress);
       pendingTransaction2[2].should.be.bignumber.equal(approvedTransferAmount);
       pendingTransaction2[3].should.be.bignumber.equal(transferFee);
-      pendingTransaction2[4].should.equal(true);
+      pendingTransaction2[4].should.equal(owner);
     });
 
     it("should not allow overdraw transactions when sender is not a feeRecipient using transferFrom", async function() {
@@ -550,7 +550,7 @@ contract("CompliantToken", function([
       event.args.to.should.equal(feeRecipient);
       event.args.value.should.be.bignumber.equal(approvedTransferAmount);
       event.args.fee.should.be.bignumber.equal(transferFee);
-      event.args.isTransferFrom.should.equal(true);
+      event.args.spender.should.equal(approvedAddress);
     });
   });
 
@@ -690,7 +690,7 @@ contract("CompliantToken", function([
 
     it("should deduct transfer fee from sender(not the feeRecipient) when using transferFrom", async function() {
       const tx1 = await this.token.approve(
-        feeRecipient,
+        approvedAddress,
         allowedTransferAmount.add(transferFee),
         {
           from: owner
@@ -724,7 +724,7 @@ contract("CompliantToken", function([
 
     it("should not deduct transfer fee from fee recipent when using transferFrom", async function() {
       const tx1 = await this.token.approve(
-        feeRecipient,
+        approvedAddress,
         allowedTransferAmount.add(transferFee),
         {
           from: owner
@@ -733,7 +733,7 @@ contract("CompliantToken", function([
       log(`approveAmount for gasUsed: ${tx1.receipt.gasUsed}`);
 
       const tx2 = await this.token.approve(
-        approvedAddress,
+        owner,
         allowedTransferAmount,
         {
           from: feeRecipient
@@ -835,7 +835,6 @@ contract("CompliantToken", function([
       log(`rejectTransfer gasUsed: ${tx.receipt.gasUsed}`);
 
       const pendingTransaction = await this.token.pendingTransactions(0);
-
       pendingTransaction[0].should.equal(
         "0x0000000000000000000000000000000000000000"
       );
@@ -848,7 +847,7 @@ contract("CompliantToken", function([
 
     it("should decrease pending approval amount when using transferFrom", async function() {
       const tx = await this.token.approve(
-        feeRecipient,
+        approvedAddress,
         allowedTransferAmount.add(transferFee),
         {
           from: owner
@@ -866,14 +865,14 @@ contract("CompliantToken", function([
       ).should.be.fulfilled;
       log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
 
-      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, feeRecipient);
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, approvedAddress);
 
       const tx2 = await this.token.rejectTransfer(1, this.reason, {
         from: validator
       }).should.be.fulfilled;
       log(`rejectTransfer gasUsed: ${tx2.receipt.gasUsed}`);
 
-      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, feeRecipient);
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, approvedAddress);
 
       pendingApprovalAmountBefore
         .sub(transferFee)
