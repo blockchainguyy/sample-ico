@@ -290,6 +290,18 @@ contract("Crowdsale", function([
       event.args.nonce.should.be.bignumber.equal(new BigNumber(0));
       event.args.reason.should.be.bignumber.equal(new BigNumber(5));
     });
+
+    it("should refund the contribution when rejected", async function() {
+      const initial = web3.eth.getBalance(investor);
+
+      const tx = await this.crowdsale.rejectMint(0, 5, { from: validator })
+        .should.be.fulfilled;
+      log(`rejectMint gasUsed: ${tx.receipt.gasUsed}`);
+
+      const final = web3.eth.getBalance(investor);
+
+      final.sub(initial).should.be.bignumber.equal(investmentAmount);
+    });
   });
 
   describe("setTokenContract", function() {
