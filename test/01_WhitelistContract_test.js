@@ -24,7 +24,7 @@ contract("Whitelist", function([
   investor9
 ]) {
   beforeEach(async function() {
-    this.whitelisting = await Whitelist.new();
+    this.whitelisting = await Whitelist.new(owner);
 
     advanceBlock();
   });
