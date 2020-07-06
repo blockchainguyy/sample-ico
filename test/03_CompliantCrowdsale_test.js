@@ -23,7 +23,7 @@ contract("Crowdsale", function([
   unApprovedinvestor
 ]) {
   const rate = new BigNumber(10);
-  const investmentAmount = ether(10);
+  const investmentAmount = ether(5);
 
   before(async function() {
     //Advance to the next block to correctly read time in the solidity "now" function interpreted by testrpc
