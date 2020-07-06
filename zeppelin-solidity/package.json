@@ -20,7 +20,7 @@
   ],
   "_resolved": "git+https://github.com/OpenZeppelin/zeppelin-solidity.git#7a0bfdfbb44583508ae5e9de51be6d3035d6af63",
   "_spec": "zeppelin-solidity@git+https://github.com/OpenZeppelin/zeppelin-solidity.git",
-  "_where": "/home/rails/work/projects/BC/iComply/Test/truffletest",
+  "_where": "/home/rails/work/projects/BC/sample/Test/truffletest",
   "author": {
     "name": "Manuel Araoz",
     "email": "manuelaraoz@gmail.com"

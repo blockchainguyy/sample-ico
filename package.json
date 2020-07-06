@@ -1,7 +1,7 @@
 {
-  "name": "icomply",
+  "name": "sample",
   "version": "1.0.0",
-  "description": "Smart contracts and test cases for iComply",
+  "description": "Smart contracts and test cases for sample",
   "main": "truffle.js",
   "directories": {
     "test": "test"
@@ -27,12 +27,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/icomplyico/iComplyICOContracts.git"
+    "url": "git+https://github.com/sampleico/sampleICOContracts.git"
   },
   "author": "Nidish Rmakrishnan",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/icomplyico/iComplyICOContracts/issues"
+    "url": "https://github.com/sampleico/sampleICOContracts/issues"
   },
-  "homepage": "https://github.com/icomplyico/iComplyICOContracts#readme"
+  "homepage": "https://github.com/sampleico/sampleICOContracts#readme"
 }

@@ -1,1 +1,1 @@
-iComplyICOContracts
+sampleICOContracts
