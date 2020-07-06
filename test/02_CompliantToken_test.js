@@ -23,7 +23,9 @@ contract("CompliantToken", function([
 ]) {
   const tokensForOwner = new BigNumber(1000);
   const allowedTransferAmount = new BigNumber(100);
+  const approvedTransferAmount = new BigNumber(50);
   const unallowedTransferAmount = new BigNumber(1001);
+  const unapprovedTransferAmount = new BigNumber(51);
   const transferFee = new BigNumber(10);
 
   before(async function() {
@@ -319,6 +321,194 @@ contract("CompliantToken", function([
       event.args.value.should.be.bignumber.equal(allowedTransferAmount);
       event.args.fee.should.be.bignumber.equal(transferFee);
       event.args.isTransferFrom.should.equal(false);
+    });
+  });
+
+  describe("transferFrom", function() {
+    beforeEach(async function() {
+      const tx1 = await this.whitelisting.approveInvestor(owner, {
+        from: owner
+      }).should.be.fulfilled;
+      log(`approveInvestor for gasUsed: ${tx1.receipt.gasUsed}`);
+
+      const tx2 = await this.whitelisting.approveInvestor(approvedAddress, {
+        from: owner
+      }).should.be.fulfilled;
+      log(`approveInvestor for gasUsed: ${tx2.receipt.gasUsed}`);
+
+      const tx3 = await this.whitelisting.approveInvestor(feeRecipient, {
+        from: owner
+      }).should.be.fulfilled;
+      log(`approveInvestor for gasUsed: ${tx3.receipt.gasUsed}`);
+
+      const tx5 = await this.token.approve(
+        feeRecipient,
+        approvedTransferAmount.add(transferFee),
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`approveAmount for gasUsed: ${tx5.receipt.gasUsed}`);
+
+      const tx6 = await this.token.approve(
+        approvedAddress,
+        approvedTransferAmount,
+        {
+          from: feeRecipient
+        }
+      ).should.be.fulfilled;
+      log(`approveAmount for gasUsed: ${tx6.receipt.gasUsed}`);
+    });
+
+    it("should record pending transactions", async function() {
+      const tx1 = await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        approvedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.fulfilled;
+      log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
+
+      const pendingTransaction1 = await this.token.pendingTransactions(0);
+
+      pendingTransaction1[0].should.equal(owner);
+      pendingTransaction1[1].should.equal(feeRecipient);
+      pendingTransaction1[2].should.be.bignumber.equal(approvedTransferAmount);
+      pendingTransaction1[3].should.be.bignumber.equal(transferFee);
+      pendingTransaction1[4].should.equal(true);
+
+      const tx2 = await this.token.approveTransfer(0, { from: validator })
+        .should.be.fulfilled;
+      log(`approveTransfer gasUsed: ${tx2.receipt.gasUsed}`);
+
+      const tx3 = await this.token.transferFrom(
+        feeRecipient,
+        approvedAddress,
+        approvedTransferAmount,
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`transfer from fee Reciepient gasUsed: ${tx3.receipt.gasUsed}`);
+
+      const pendingTransaction2 = await this.token.pendingTransactions(1);
+
+      pendingTransaction2[0].should.equal(feeRecipient);
+      pendingTransaction2[1].should.equal(approvedAddress);
+      pendingTransaction2[2].should.be.bignumber.equal(approvedTransferAmount);
+      pendingTransaction2[3].should.be.bignumber.equal(transferFee);
+      pendingTransaction2[4].should.equal(true);
+    });
+
+    it("should have an address(0) check on spenderAddress address", async function() {
+      await this.token
+        .transferFrom("0x0", feeRecipient, approvedTransferAmount, {
+          from: approvedAddress
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should have an address(0) check on recipient address", async function() {
+      await this.token
+        .transferFrom(owner, "0x0", approvedTransferAmount, {
+          from: approvedAddress
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should revert if sender is not whitelisted", async function() {
+      await this.token
+        .transferFrom(owner, feeRecipient, approvedTransferAmount, {
+          from: unapprovedAddress
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should revert if spender is not whitelisted", async function() {
+      await this.token
+        .transferFrom(unapprovedAddress, feeRecipient, approvedTransferAmount, {
+          from: approvedAddress
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should revert if reciever is not whitelisted", async function() {
+      await this.token
+        .transferFrom(owner, unapprovedAddress, approvedTransferAmount, {
+          from: owner
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should revert if transfer value is invalid for normal user", async function() {
+      await this.token
+        .transferFrom(owner, feeRecipient, unallowedTransferAmount, {
+          from: approvedAddress
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should revert if transfer value is invalid for fee recipent", async function() {
+      await this.token
+        .transferFrom(owner, feeRecipient, unallowedTransferAmount, {
+          from: approvedAddress
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should revert if approved value is invalid and transfer value is valid for normal user", async function() {
+      await this.token
+        .transferFrom(owner, feeRecipient, unapprovedTransferAmount, {
+          from: approvedAddress
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should revert if approved value is invalid and transfer value is valid for fee recipent", async function() {
+      await this.token
+        .transferFrom(owner, feeRecipient, unapprovedTransferAmount, {
+          from: approvedAddress
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should increment currentNonce", async function() {
+      const tx = await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        approvedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.fulfilled;
+      log(`transfer gasUsed: ${tx.receipt.gasUsed}`);
+
+      (await this.token.currentNonce()).should.be.bignumber.equal(
+        new BigNumber(1)
+      );
+    });
+
+    it("should log event", async function() {
+      const tx = await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        approvedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.fulfilled;
+      log(`transfer gasUsed: ${tx.receipt.gasUsed}`);
+
+      const event = tx.logs.find(e => e.event === "RecordedPendingTransaction");
+
+      should.exist(event);
+      event.args.from.should.equal(owner);
+      event.args.to.should.equal(feeRecipient);
+      event.args.value.should.be.bignumber.equal(approvedTransferAmount);
+      event.args.fee.should.be.bignumber.equal(transferFee);
+      event.args.isTransferFrom.should.equal(true);
     });
   });
 
