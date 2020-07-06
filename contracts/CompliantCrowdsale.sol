@@ -2,11 +2,11 @@ pragma solidity ^0.4.21;
 
 import "./WhitelistContract.sol";
 import "./CompliantToken.sol";
-import "../zeppelin-solidity/contracts/crowdsale/FinalizableCrowdsale.sol";
-import "../zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../contracts/utility/FinalizableCrowdsale.sol";
+import "../contracts/utility/Ownable.sol";
 
 
-contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
+contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
     Whitelist public whiteListingContract;
 
     struct MintStruct {
@@ -48,6 +48,22 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
 
     event Claimed(address indexed account, uint256 amount);
 
+    function CompliantCrowdsale(
+        address whitelistAddress,
+        uint256 _startTime,
+        uint256 _endTime,
+        uint256 _rate,
+        address _wallet,
+        MintableToken _token,
+        address _owner
+    )
+        public
+        FinalizableCrowdsale(_owner)
+        Crowdsale(_startTime, _endTime, _rate, _wallet, _token)
+    {
+        setWhitelistContract(whitelistAddress);
+    }
+
     function setWhitelistContract(address whitelistAddress) public 
         onlyValidator 
         checkIsAddressValid(whitelistAddress)
@@ -56,22 +72,7 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
         emit WhiteListingContractSet(whiteListingContract);
     }
 
-    function CompliantCrowdsale(
-        address whitelistAddress,
-        uint256 _startTime,
-        uint256 _endTime,
-        uint256 _rate,
-        address _wallet,
-        MintableToken _token
-    )
-        public
-        Crowdsale(_startTime, _endTime, _rate, _wallet, _token)
-    {
-        setWhitelistContract(whitelistAddress);
-    }
-
     function buyTokens(address beneficiary) public 
-        checkIsAddressValid(beneficiary)
         checkIsInvestorApproved(beneficiary)
         payable
     {

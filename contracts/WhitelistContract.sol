@@ -1,34 +1,46 @@
 pragma solidity ^0.4.21;
 
-import "../zeppelin-solidity/contracts/ownership/Ownable.sol";
+import "../contracts/utility/Ownable.sol";
 
 
 contract Whitelist is Ownable {
-    mapping(address => bool) public isInvestorApproved;
+    mapping(address => bool) internal investorMap;
 
     event Approved(address indexed investor);
     event Disapproved(address indexed investor);
 
+    function Whitelist(address _owner) 
+        public 
+        Ownable(_owner) 
+    {
+
+    }
+
+    function isInvestorApproved(address _investor) external constant returns (bool) {
+        require(_investor != address(0));
+        return investorMap[_investor];
+    }
+
     function approveInvestor(address toApprove) external onlyOwner {
-        isInvestorApproved[toApprove] = true;
+        investorMap[toApprove] = true;
         emit Approved(toApprove);
     }
 
     function approveInvestorsInBulk(address[] toApprove) external onlyOwner {
         for (uint i = 0; i < toApprove.length; i++) {
-            isInvestorApproved[toApprove[i]] = true;
+            investorMap[toApprove[i]] = true;
             emit Approved(toApprove[i]);
         }
     }
 
     function disapproveInvestor(address toDisapprove) external onlyOwner {
-        delete isInvestorApproved[toDisapprove];
+        delete investorMap[toDisapprove];
         emit Disapproved(toDisapprove);
     }
 
     function disapproveInvestorsInBulk(address[] toDisapprove) external onlyOwner {
         for (uint i = 0; i < toDisapprove.length; i++) {
-            delete isInvestorApproved[toDisapprove[i]];
+            delete investorMap[toDisapprove[i]];
             emit Disapproved(toDisapprove[i]);
         }
     }
