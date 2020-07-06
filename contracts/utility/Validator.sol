@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 
 /**
@@ -33,7 +33,7 @@ contract Validator {
     */
     function setNewValidator(address newValidator) public onlyValidator {
         require(newValidator != address(0));
-        NewValidatorSet(validator, newValidator);
+        emit NewValidatorSet(validator, newValidator);
         validator = newValidator;
     }
 }

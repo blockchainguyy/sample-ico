@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "../zeppelin-solidity/contracts/ownership/Ownable.sol";
 
@@ -11,25 +11,25 @@ contract Whitelist is Ownable {
 
     function approveInvestor(address toApprove) external onlyOwner {
         isInvestorApproved[toApprove] = true;
-        Approved(toApprove);
+        emit Approved(toApprove);
     }
 
     function approveInvestorsInBulk(address[] toApprove) external onlyOwner {
-        for (uint i=0; i<toApprove.length; i++) {
+        for (uint i = 0; i < toApprove.length; i++) {
             isInvestorApproved[toApprove[i]] = true;
-            Approved(toApprove[i]);
+            emit Approved(toApprove[i]);
         }
     }
 
     function disapproveInvestor(address toDisapprove) external onlyOwner {
         delete isInvestorApproved[toDisapprove];
-        Disapproved(toDisapprove);
+        emit Disapproved(toDisapprove);
     }
 
     function disapproveInvestorsInBulk(address[] toDisapprove) external onlyOwner {
-        for (uint i=0; i<toDisapprove.length; i++) {
+        for (uint i = 0; i < toDisapprove.length; i++) {
             delete isInvestorApproved[toDisapprove[i]];
-            Disapproved(toDisapprove[i]);
+            emit Disapproved(toDisapprove[i]);
         }
     }
 }

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "../zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
 import "./utility/Validator.sol";
@@ -70,18 +70,18 @@ contract CompliantToken is Validator, MintableToken {
     onlyValidator
     checkIsAddressValid(whitelistAddress) {
         whiteListingContract = Whitelist(whitelistAddress);
-        WhiteListingContractSet(whiteListingContract);
+        emit WhiteListingContractSet(whiteListingContract);
     }
 
     function setFee(uint256 fee) external onlyValidator {
-        FeeSet(transferFee, fee);
+        emit FeeSet(transferFee, fee);
         transferFee = fee;
     }
 
     function setFeeRecipient(address recipient) external
     onlyValidator
     checkIsAddressValid(recipient) {
-        FeeRecipientSet(feeRecipient, recipient);
+        emit FeeRecipientSet(feeRecipient, recipient);
         feeRecipient = recipient;
     }
 
@@ -103,7 +103,7 @@ contract CompliantToken is Validator, MintableToken {
             false
         );
 
-        RecordedPendingTransaction(msg.sender, _to, _value, transferFee, false);
+        emit RecordedPendingTransaction(msg.sender, _to, _value, transferFee, false);
         currentNonce++;
 
         return true;
@@ -135,7 +135,7 @@ contract CompliantToken is Validator, MintableToken {
             true
         );
 
-        RecordedPendingTransaction(_from, _to, _value, transferFee, true);
+        emit RecordedPendingTransaction(_from, _to, _value, transferFee, true);
         currentNonce++;
 
         return true;
@@ -154,7 +154,7 @@ contract CompliantToken is Validator, MintableToken {
             balances[pendingTransactions[nonce].to] = balances[pendingTransactions[nonce].to]
                 .add(pendingTransactions[nonce].value);
 
-            TransferWithFee(
+            emit TransferWithFee(
                 pendingTransactions[nonce].from,
                 pendingTransactions[nonce].to,
                 pendingTransactions[nonce].value,
@@ -167,7 +167,7 @@ contract CompliantToken is Validator, MintableToken {
                 .add(pendingTransactions[nonce].value);
             balances[feeRecipient] = balances[feeRecipient].add(pendingTransactions[nonce].fee);
 
-            TransferWithFee(
+            emit TransferWithFee(
                 pendingTransactions[nonce].from,
                 pendingTransactions[nonce].to,
                 pendingTransactions[nonce].value,
@@ -175,7 +175,7 @@ contract CompliantToken is Validator, MintableToken {
             );
         }
                     
-        Transfer(
+        emit Transfer(
             pendingTransactions[nonce].from,
             pendingTransactions[nonce].to,
             pendingTransactions[nonce].value
@@ -212,7 +212,7 @@ contract CompliantToken is Validator, MintableToken {
             }
         }
         
-        TransferRejected(
+        emit TransferRejected(
             pendingTransactions[nonce].from,
             pendingTransactions[nonce].to,
             pendingTransactions[nonce].value,

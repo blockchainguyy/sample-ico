@@ -1,4 +1,4 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.21;
 
 import "./WhitelistContract.sol";
 import "./CompliantToken.sol";
@@ -52,7 +52,7 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
     onlyValidator 
     checkIsAddressValid(whitelistAddress) {
         whiteListingContract = Whitelist(whitelistAddress);
-        WhiteListingContractSet(whiteListingContract);
+        emit WhiteListingContractSet(whiteListingContract);
     }
 
     function CompliantCrowdsale(
@@ -81,7 +81,7 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
         uint256 tokens = weiAmount.mul(rate);
 
         pendingMints[currentMintNonce] = MintStruct(beneficiary, tokens, weiAmount);
-        ContributionRegistered(beneficiary, tokens, weiAmount, currentMintNonce);
+        emit ContributionRegistered(beneficiary, tokens, weiAmount, currentMintNonce);
 
         currentMintNonce++;
     }
@@ -96,7 +96,7 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
         //No need to use mint-approval on token side, since the minting is already approved in the crowdsale side
         token.mint(pendingMints[nonce].to, pendingMints[nonce].tokens);
         
-        TokenPurchase(
+        emit TokenPurchase(
             msg.sender,
             pendingMints[nonce].to,
             pendingMints[nonce].weiAmount,
@@ -114,7 +114,7 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
     checkIsAddressValid(pendingMints[nonce].to) {
         rejectedMintBalance[pendingMints[nonce].to] = rejectedMintBalance[pendingMints[nonce].to].add(pendingMints[nonce].weiAmount);
         
-        MintRejected(
+        emit MintRejected(
             pendingMints[nonce].to,
             pendingMints[nonce].tokens,
             pendingMints[nonce].weiAmount,
@@ -132,7 +132,7 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
 
         msg.sender.transfer(value);
 
-        Claimed(msg.sender, value);
+        emit Claimed(msg.sender, value);
     }
 
     function finalization() internal {
