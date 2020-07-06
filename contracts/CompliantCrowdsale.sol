@@ -18,6 +18,16 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
     mapping (uint => MintStruct) public pendingMints;
     uint256 public currentMintNonce;
 
+    modifier checkIsInvestorApproved(address _account) {
+        require(whiteListingContract.isInvestorApproved(_account));
+        _;
+    }
+
+    modifier checkIsAddressValid(address _account) {
+        require(_account != address(0));
+        _;
+    }
+
     event MintRejected(
         address indexed to,
         uint256 value,
@@ -35,8 +45,9 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
 
     event WhiteListingContractSet(address indexed _whiteListingContract);
 
-    function setWhitelistContract(address whitelistAddress) public onlyValidator {
-        require(whitelistAddress != address(0));
+    function setWhitelistContract(address whitelistAddress) public 
+    onlyValidator 
+    checkIsAddressValid(whitelistAddress) {
         whiteListingContract = Whitelist(whitelistAddress);
         WhiteListingContractSet(whiteListingContract);
     }
@@ -55,9 +66,10 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         setWhitelistContract(whitelistAddress);
     }
 
-    function buyTokens(address beneficiary) public payable {
-        require(beneficiary != address(0));
-        require(whiteListingContract.isInvestorApproved(beneficiary));
+    function buyTokens(address beneficiary) public 
+    checkIsAddressValid(beneficiary)
+    checkIsInvestorApproved(beneficiary)
+    payable {
         require(validPurchase());
 
         uint256 weiAmount = msg.value;
@@ -71,9 +83,10 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         currentMintNonce++;
     }
 
-    function approveMint(uint256 nonce) external onlyValidator returns (bool) {
-        require(whiteListingContract.isInvestorApproved(pendingMints[nonce].to));
-
+    function approveMint(uint256 nonce) external 
+    onlyValidator 
+    checkIsInvestorApproved(pendingMints[nonce].to)
+    returns (bool) {
         // update state
         weiRaised = weiRaised.add(pendingMints[nonce].weiAmount);
 
@@ -93,9 +106,9 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         return true;
     }
 
-    function rejectMint(uint256 nonce, uint256 reason) external onlyValidator {
-        require(pendingMints[nonce].to != address(0));
-
+    function rejectMint(uint256 nonce, uint256 reason) external 
+    onlyValidator 
+    checkIsAddressValid(pendingMints[nonce].to) {
         pendingMints[nonce].to.transfer(pendingMints[nonce].weiAmount);
         
         MintRejected(
@@ -109,13 +122,15 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         delete pendingMints[nonce];
     }
 
-    function setTokenContract(address newToken) external onlyOwner {
-        require(newToken != address(0));
+    function setTokenContract(address newToken) external 
+    onlyOwner
+    checkIsAddressValid(newToken) {
         token = CompliantToken(newToken);
     }
 
-    function transferTokenOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0));
+    function transferTokenOwnership(address newOwner) external 
+    onlyOwner
+    checkIsAddressValid(newOwner) {
         token.transferOwnership(newOwner);
     }
 
