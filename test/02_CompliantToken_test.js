@@ -646,6 +646,96 @@ contract("CompliantToken", function([
         .should.be.bignumber.equal(allowedTransferAmount);
     });
 
+    it("should deduct transfer fee from sender(not the feeRecipient) when using transferFrom", async function() {
+      const tx1 = await this.token.approve(
+        feeRecipient,
+        allowedTransferAmount.add(transferFee),
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`approveAmount for gasUsed: ${tx1.receipt.gasUsed}`);
+
+      const tx3 = await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        allowedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.fulfilled;
+      log(`transferFrom gasUsed: ${tx3.receipt.gasUsed}`);
+
+      const balanceBefore = await this.token.balanceOf(owner);
+
+      const tx4 = await this.token.approveTransfer(1, { from: validator })
+        .should.be.fulfilled;
+      log(`approveTransfer gasUsed: ${tx4.receipt.gasUsed}`);
+
+      const balanceAfter = await this.token.balanceOf(owner);
+
+      balanceBefore
+        .sub(balanceAfter)
+        .sub(transferFee)
+        .should.be.bignumber.equal(allowedTransferAmount);
+    });
+
+    it("should not deduct transfer fee from fee recipent when using transferFrom", async function() {
+      const tx1 = await this.token.approve(
+        feeRecipient,
+        allowedTransferAmount.add(transferFee),
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`approveAmount for gasUsed: ${tx1.receipt.gasUsed}`);
+
+      const tx2 = await this.token.approve(
+        approvedAddress,
+        allowedTransferAmount,
+        {
+          from: feeRecipient
+        }
+      ).should.be.fulfilled;
+      log(`approveAmount for gasUsed: ${tx2.receipt.gasUsed}`);
+
+      const tx3 = await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        allowedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.fulfilled;
+      log(`transferFrom gasUsed: ${tx3.receipt.gasUsed}`);
+
+      const tx4 = await this.token.approveTransfer(1, { from: validator })
+        .should.be.fulfilled;
+      log(`approveTransfer gasUsed: ${tx4.receipt.gasUsed}`);
+
+      const tx5 = await this.token.transferFrom(
+        feeRecipient,
+        approvedAddress,
+        allowedTransferAmount,
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`transferFrom gasUsed: ${tx5.receipt.gasUsed}`);
+
+      const balanceBefore = await this.token.balanceOf(feeRecipient);
+
+      const tx6 = await this.token.approveTransfer(2, { from: validator })
+        .should.be.fulfilled;
+      log(`approveTransfer gasUsed: ${tx6.receipt.gasUsed}`);
+
+      const balanceAfter = await this.token.balanceOf(feeRecipient);
+
+      balanceBefore
+        .sub(balanceAfter)
+        .should.be.bignumber.equal(allowedTransferAmount);
+    });
+
     it("should log event", async function() {
       const tx = await this.token.approveTransfer(0, { from: validator }).should
         .be.fulfilled;
