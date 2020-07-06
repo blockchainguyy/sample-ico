@@ -135,12 +135,6 @@ contract CompliantToken is Validator, MintableToken {
             balances[pendingTransactions[nonce].to] = balances[pendingTransactions[nonce].to]
                 .add(pendingTransactions[nonce].value);
             
-            Transfer(
-                pendingTransactions[nonce].from,
-                pendingTransactions[nonce].to,
-                pendingTransactions[nonce].value
-            );
-            
             TransferWithFee(
                 pendingTransactions[nonce].from,
                 pendingTransactions[nonce].to,
@@ -154,12 +148,6 @@ contract CompliantToken is Validator, MintableToken {
                 .add(pendingTransactions[nonce].value);
             balances[feeRecipient] = balances[feeRecipient].add(pendingTransactions[nonce].fee);
             
-            Transfer(
-                pendingTransactions[nonce].from,
-                pendingTransactions[nonce].to,
-                pendingTransactions[nonce].value
-            );
-
             TransferWithFee(
                 pendingTransactions[nonce].from,
                 pendingTransactions[nonce].to,
@@ -167,6 +155,12 @@ contract CompliantToken is Validator, MintableToken {
                 pendingTransactions[nonce].fee
             );
         }
+
+        Transfer(
+                pendingTransactions[nonce].from,
+                pendingTransactions[nonce].to,
+            pendingTransactions[nonce].value
+            );
 
         if (pendingTransactions[nonce].isTransferFrom) {
             if (pendingTransactions[nonce].from == feeRecipient) {
