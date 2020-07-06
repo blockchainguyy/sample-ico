@@ -9,24 +9,24 @@ contract Whitelist is Ownable {
     event Approved(address indexed investor);
     event Disapproved(address indexed investor);
 
-    function approveInvestor(address toApprove) public onlyOwner {
+    function approveInvestor(address toApprove) external onlyOwner {
         isInvestorApproved[toApprove] = true;
         Approved(toApprove);
     }
 
-    function approveInvestorsInBulk(address[] toApprove) public onlyOwner {
+    function approveInvestorsInBulk(address[] toApprove) external onlyOwner {
         for (uint i=0; i<toApprove.length; i++) {
             isInvestorApproved[toApprove[i]] = true;
             Approved(toApprove[i]);
         }
     }
 
-    function disapproveInvestor(address toDisapprove) public onlyOwner {
+    function disapproveInvestor(address toDisapprove) external onlyOwner {
         delete isInvestorApproved[toDisapprove];
         Disapproved(toDisapprove);
     }
 
-    function disapproveInvestorsInBulk(address[] toDisapprove) public onlyOwner {
+    function disapproveInvestorsInBulk(address[] toDisapprove) external onlyOwner {
         for (uint i=0; i<toDisapprove.length; i++) {
             delete isInvestorApproved[toDisapprove[i]];
             Disapproved(toDisapprove[i]);

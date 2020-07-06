@@ -71,7 +71,7 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         currentMintNonce++;
     }
 
-    function approveMint(uint256 nonce) public onlyValidator returns (bool) {
+    function approveMint(uint256 nonce) external onlyValidator returns (bool) {
         require(whiteListingContract.isInvestorApproved(pendingMints[nonce].to));
 
         // update state
@@ -93,7 +93,7 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         return true;
     }
 
-    function rejectMint(uint256 nonce, uint256 reason) public onlyValidator {
+    function rejectMint(uint256 nonce, uint256 reason) external onlyValidator {
         require(pendingMints[nonce].to != address(0));
 
         pendingMints[nonce].to.transfer(pendingMints[nonce].weiAmount);
@@ -109,12 +109,12 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         delete pendingMints[nonce];
     }
 
-    function setTokenContract(address newToken) public onlyOwner {
+    function setTokenContract(address newToken) external onlyOwner {
         require(newToken != address(0));
         token = CompliantToken(newToken);
     }
 
-    function transferTokenOwnership(address newOwner) public onlyOwner {
+    function transferTokenOwnership(address newOwner) external onlyOwner {
         require(newOwner != address(0));
         token.transferOwnership(newOwner);
     }

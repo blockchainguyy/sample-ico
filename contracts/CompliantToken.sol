@@ -51,18 +51,18 @@ contract CompliantToken is Validator, MintableToken {
 
     event FeeRecipientSet(address indexed previousRecipient, address indexed newRecipient);
 
-    function setWhitelistContract(address whitelistAddress) public onlyValidator {
+    function setWhitelistContract(address whitelistAddress) external onlyValidator {
         require(whitelistAddress != address(0));
         whiteListingContract = Whitelist(whitelistAddress);
         WhiteListingContractSet(whiteListingContract);
     }
 
-    function setFee(uint256 fee) public onlyValidator {
+    function setFee(uint256 fee) external onlyValidator {
         FeeSet(transferFee, fee);
         transferFee = fee;
     }
 
-    function setFeeRecipient(address recipient) public onlyValidator {
+    function setFeeRecipient(address recipient) external onlyValidator {
         require(recipient != address(0));
         FeeRecipientSet(feeRecipient, recipient);
         feeRecipient = recipient;
@@ -124,7 +124,7 @@ contract CompliantToken is Validator, MintableToken {
         return true;
     }
 
-    function approveTransfer(uint256 nonce) public onlyValidator returns (bool) {
+    function approveTransfer(uint256 nonce) external onlyValidator returns (bool) {
         require(pendingTransactions[nonce].to != address(0));
         require(whiteListingContract.isInvestorApproved(pendingTransactions[nonce].from));
         require(whiteListingContract.isInvestorApproved(pendingTransactions[nonce].to));
@@ -134,7 +134,7 @@ contract CompliantToken is Validator, MintableToken {
                 .sub(pendingTransactions[nonce].value);
             balances[pendingTransactions[nonce].to] = balances[pendingTransactions[nonce].to]
                 .add(pendingTransactions[nonce].value);
-            
+
             TransferWithFee(
                 pendingTransactions[nonce].from,
                 pendingTransactions[nonce].to,
@@ -147,7 +147,7 @@ contract CompliantToken is Validator, MintableToken {
             balances[pendingTransactions[nonce].to] = balances[pendingTransactions[nonce].to]
                 .add(pendingTransactions[nonce].value);
             balances[feeRecipient] = balances[feeRecipient].add(pendingTransactions[nonce].fee);
-            
+
             TransferWithFee(
                 pendingTransactions[nonce].from,
                 pendingTransactions[nonce].to,
@@ -155,13 +155,13 @@ contract CompliantToken is Validator, MintableToken {
                 pendingTransactions[nonce].fee
             );
         }
-
+                    
         Transfer(
-                pendingTransactions[nonce].from,
-                pendingTransactions[nonce].to,
+            pendingTransactions[nonce].from,
+            pendingTransactions[nonce].to,
             pendingTransactions[nonce].value
-            );
-
+        );
+        
         if (pendingTransactions[nonce].isTransferFrom) {
             if (pendingTransactions[nonce].from == feeRecipient) {
                 allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
@@ -180,7 +180,7 @@ contract CompliantToken is Validator, MintableToken {
         return true;
     }
 
-    function rejectTransfer(uint256 nonce, uint256 reason) public onlyValidator {
+    function rejectTransfer(uint256 nonce, uint256 reason) external onlyValidator {
         require(pendingTransactions[nonce].to != address(0));
         
         if (pendingTransactions[nonce].isTransferFrom) {
