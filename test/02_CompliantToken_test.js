@@ -35,21 +35,16 @@ contract("CompliantToken", function([
 
   beforeEach(async function() {
     this.whitelisting = await Whitelist.new(owner);
-    this.token = await Token.new(owner, tokensForOwner);
-
-    const tx1 = await this.token.setWhitelistContract(
-      this.whitelisting.address
+    this.token = await Token.new(
+      owner,
+      tokensForOwner,
+      this.whitelisting.address,
+      feeRecipient,
+      transferFee
     );
-    log(`setWhitelistContract gasUsed: ${tx1.receipt.gasUsed}`);
 
-    const tx2 = await this.token.setFee(transferFee);
-    log(`setFee gasUsed: ${tx2.receipt.gasUsed}`);
-
-    const tx3 = await this.token.setFeeRecipient(feeRecipient);
-    log(`setFeeRecipient gasUsed: ${tx3.receipt.gasUsed}`);
-
-    const tx4 = await this.token.setNewValidator(validator, { from: owner });
-    log(`setNewValidator gasUsed: ${tx4.receipt.gasUsed}`);
+    const tx = await this.token.setNewValidator(validator, { from: owner });
+    log(`setNewValidator gasUsed: ${tx.receipt.gasUsed}`);
   });
 
   it("should be created properly", async function() {
@@ -224,7 +219,9 @@ contract("CompliantToken", function([
       pendingTransaction1[1].should.equal(feeRecipient);
       pendingTransaction1[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction1[3].should.be.bignumber.equal(transferFee);
-      pendingTransaction1[4].should.equal("0x0000000000000000000000000000000000000000");
+      pendingTransaction1[4].should.equal(
+        "0x0000000000000000000000000000000000000000"
+      );
 
       const tx2 = await this.token.approveTransfer(0, { from: validator })
         .should.be.fulfilled;
@@ -245,11 +242,12 @@ contract("CompliantToken", function([
       pendingTransaction2[1].should.equal(approvedAddress);
       pendingTransaction2[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction2[3].should.be.bignumber.equal(transferFee);
-      pendingTransaction2[4].should.equal("0x0000000000000000000000000000000000000000");
+      pendingTransaction2[4].should.equal(
+        "0x0000000000000000000000000000000000000000"
+      );
     });
 
     it("should not allow overdraw transactions when sender is not a feeRecipient using transfer", async function() {
-      
       const tx1 = await this.token.transfer(
         feeRecipient,
         tokensForOwner.sub(transferFee),
@@ -258,18 +256,15 @@ contract("CompliantToken", function([
         }
       ).should.be.fulfilled;
       log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
-      
-      await this.token.transfer(
-        feeRecipient,
-        approvedTransferAmount,
-        {
-          from: owner
-        }
-      ).should.be.rejectedWith(VMExceptionRevert);
-    });
-    
-    it("should not allow overdraw transactions when sender is feeRecipient using transfer", async function() {
 
+      await this.token
+        .transfer(feeRecipient, approvedTransferAmount, {
+          from: owner
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should not allow overdraw transactions when sender is feeRecipient using transfer", async function() {
       const tx1 = await this.token.transfer(
         feeRecipient,
         allowedTransferAmount,
@@ -292,13 +287,11 @@ contract("CompliantToken", function([
       ).should.be.fulfilled;
       log(`transfer gasUsed: ${tx3.receipt.gasUsed}`);
 
-      await this.token.transfer(
-        approvedAddress,
-        unapprovedTransferAmount,
-        {
+      await this.token
+        .transfer(approvedAddress, unapprovedTransferAmount, {
           from: feeRecipient
-        }
-      ).should.be.rejectedWith(VMExceptionRevert);
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
     });
 
     it("should have an address(0) check", async function() {
@@ -373,7 +366,9 @@ contract("CompliantToken", function([
       event.args.to.should.equal(feeRecipient);
       event.args.value.should.be.bignumber.equal(allowedTransferAmount);
       event.args.fee.should.be.bignumber.equal(transferFee);
-      event.args.spender.should.equal("0x0000000000000000000000000000000000000000");
+      event.args.spender.should.equal(
+        "0x0000000000000000000000000000000000000000"
+      );
     });
   });
 
@@ -403,13 +398,9 @@ contract("CompliantToken", function([
       ).should.be.fulfilled;
       log(`approveAmount for gasUsed: ${tx4.receipt.gasUsed}`);
 
-      const tx5 = await this.token.approve(
-        owner,
-        allowedTransferAmount,
-        {
-          from: feeRecipient
-        }
-      ).should.be.fulfilled;
+      const tx5 = await this.token.approve(owner, allowedTransferAmount, {
+        from: feeRecipient
+      }).should.be.fulfilled;
       log(`approveAmount for gasUsed: ${tx5.receipt.gasUsed}`);
     });
 
@@ -456,7 +447,6 @@ contract("CompliantToken", function([
     });
 
     it("should not allow overdraw transactions when sender is not a feeRecipient using transferFrom", async function() {
-
       const tx1 = await this.token.transferFrom(
         owner,
         feeRecipient,
@@ -467,18 +457,14 @@ contract("CompliantToken", function([
       ).should.be.fulfilled;
       log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
 
-      await this.token.transferFrom(
-        owner,
-        feeRecipient,
-        unapprovedTransferAmount,
-        {
+      await this.token
+        .transferFrom(owner, feeRecipient, unapprovedTransferAmount, {
           from: approvedAddress
-        }
-      ).should.be.rejectedWith(VMExceptionRevert);
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
     });
 
     it("should not allow overdraw transactions when sender is feeRecipient using transferFrom", async function() {
-
       const tx1 = await this.token.transferFrom(
         owner,
         feeRecipient,
@@ -503,14 +489,11 @@ contract("CompliantToken", function([
       ).should.be.fulfilled;
       log(`transfer from fee Reciepient gasUsed: ${tx3.receipt.gasUsed}`);
 
-      await this.token.transferFrom(
-        feeRecipient,
-        approvedAddress,
-        unapprovedTransferAmount,
-        {
+      await this.token
+        .transferFrom(feeRecipient, approvedAddress, unapprovedTransferAmount, {
           from: owner
-        }
-      ).should.be.rejectedWith(VMExceptionRevert);
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
     });
 
     it("should have an address(0) check on spenderAddress address", async function() {
@@ -658,19 +641,24 @@ contract("CompliantToken", function([
     });
 
     it("should decrease pending approval amount when using transfer", async function() {
-
-      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, "0x0000000000000000000000000000000000000000");
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(
+        owner,
+        "0x0000000000000000000000000000000000000000"
+      );
 
       const tx = await this.token.approveTransfer(0, { from: validator }).should
         .be.fulfilled;
       log(`approveTransfer gasUsed: ${tx.receipt.gasUsed}`);
 
-      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, "0x0000000000000000000000000000000000000000");
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(
+        owner,
+        "0x0000000000000000000000000000000000000000"
+      );
 
       pendingApprovalAmountBefore
         .sub(transferFee)
         .sub(allowedTransferAmount)
-        .should.be.bignumber.equal(pendingApprovalAmountAfter)
+        .should.be.bignumber.equal(pendingApprovalAmountAfter);
     });
 
     it("should decrease pending approval amount when using transferFrom", async function() {
@@ -693,19 +681,25 @@ contract("CompliantToken", function([
       ).should.be.fulfilled;
       log(`transferFrom gasUsed: ${tx1.receipt.gasUsed}`);
 
-      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, approvedAddress);
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(
+        owner,
+        approvedAddress
+      );
 
       const tx2 = await this.token.approveTransfer(1, this.reason, {
         from: validator
       }).should.be.fulfilled;
       log(`approveTransfer gasUsed: ${tx2.receipt.gasUsed}`);
 
-      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, approvedAddress);
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(
+        owner,
+        approvedAddress
+      );
 
       pendingApprovalAmountBefore
         .sub(transferFee)
         .sub(allowedTransferAmount)
-        .should.be.bignumber.equal(pendingApprovalAmountAfter)
+        .should.be.bignumber.equal(pendingApprovalAmountAfter);
     });
 
     it("should increment balance of reciever", async function() {
@@ -836,13 +830,9 @@ contract("CompliantToken", function([
       ).should.be.fulfilled;
       log(`approveAmount for gasUsed: ${tx1.receipt.gasUsed}`);
 
-      const tx2 = await this.token.approve(
-        owner,
-        allowedTransferAmount,
-        {
-          from: feeRecipient
-        }
-      ).should.be.fulfilled;
+      const tx2 = await this.token.approve(owner, allowedTransferAmount, {
+        from: feeRecipient
+      }).should.be.fulfilled;
       log(`approveAmount for gasUsed: ${tx2.receipt.gasUsed}`);
 
       const tx3 = await this.token.transferFrom(
@@ -950,20 +940,25 @@ contract("CompliantToken", function([
     });
 
     it("should decrease pending approval amount when using transfer", async function() {
-
-      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, "0x0000000000000000000000000000000000000000");
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(
+        owner,
+        "0x0000000000000000000000000000000000000000"
+      );
 
       const tx = await this.token.rejectTransfer(0, this.reason, {
         from: validator
       }).should.be.fulfilled;
       log(`rejectTransfer gasUsed: ${tx.receipt.gasUsed}`);
 
-      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, "0x0000000000000000000000000000000000000000");
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(
+        owner,
+        "0x0000000000000000000000000000000000000000"
+      );
 
       pendingApprovalAmountBefore
         .sub(transferFee)
         .sub(allowedTransferAmount)
-        .should.be.bignumber.equal(pendingApprovalAmountAfter)
+        .should.be.bignumber.equal(pendingApprovalAmountAfter);
     });
 
     it("should decrease pending approval amount when using transferFrom", async function() {
@@ -986,19 +981,25 @@ contract("CompliantToken", function([
       ).should.be.fulfilled;
       log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
 
-      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, approvedAddress);
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(
+        owner,
+        approvedAddress
+      );
 
       const tx2 = await this.token.rejectTransfer(1, this.reason, {
         from: validator
       }).should.be.fulfilled;
       log(`rejectTransfer gasUsed: ${tx2.receipt.gasUsed}`);
 
-      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, approvedAddress);
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(
+        owner,
+        approvedAddress
+      );
 
       pendingApprovalAmountBefore
         .sub(transferFee)
         .sub(allowedTransferAmount)
-        .should.be.bignumber.equal(pendingApprovalAmountAfter)
+        .should.be.bignumber.equal(pendingApprovalAmountAfter);
     });
 
     it("should revert if called for non existing transfers", async function() {

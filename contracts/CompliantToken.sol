@@ -66,15 +66,23 @@ contract CompliantToken is Validator, MintableToken {
 
     event FeeRecipientSet(address indexed previousRecipient, address indexed newRecipient);
 
-    constructor(address _owner)
+    constructor(
+        address _owner,
+        address whitelistAddress,
+        address recipient,
+        uint256 fee
+    )
         public 
         MintableToken(_owner)
         Validator()
     {
+        setWhitelistContract(whitelistAddress);
+        setFeeRecipient(recipient);
+        setFee(fee);
     }
 
     function setWhitelistContract(address whitelistAddress)
-        external
+        public
         onlyValidator
         checkIsAddressValid(whitelistAddress)
     {
@@ -83,7 +91,7 @@ contract CompliantToken is Validator, MintableToken {
     }
 
     function setFee(uint256 fee)
-        external
+        public
         onlyValidator
     {
         emit FeeSet(transferFee, fee);
@@ -91,7 +99,7 @@ contract CompliantToken is Validator, MintableToken {
     }
 
     function setFeeRecipient(address recipient)
-        external
+        public
         onlyValidator
         checkIsAddressValid(recipient)
     {

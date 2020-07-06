@@ -20,11 +20,13 @@ contract("Crowdsale", function([
   validator,
   wallet,
   investor,
-  unApprovedinvestor
+  unApprovedinvestor,
+  feeRecipient
 ]) {
   const rate = new BigNumber(10);
   const investmentAmount = ether(4);
   const tokensForOwner = new BigNumber(1000);
+  const transferFee = new BigNumber(10);
 
   before(async function() {
     //Advance to the next block to correctly read time in the solidity "now" function interpreted by testrpc
@@ -38,7 +40,13 @@ contract("Crowdsale", function([
     this.afterEndTime = this.endTime + duration.seconds(1);
 
     this.whitelisting = await Whitelisting.new(owner);
-    this.token = await Token.new(owner, tokensForOwner);
+    this.token = await Token.new(
+      owner,
+      tokensForOwner,
+      this.whitelisting.address,
+      feeRecipient,
+      transferFee
+    );
     this.crowdsale = await Crowdsale.new(
       this.whitelisting.address,
       this.startTime,
@@ -49,22 +57,17 @@ contract("Crowdsale", function([
       owner
     );
 
-    const tx1 = await this.token.setWhitelistContract(
-      this.whitelisting.address
-    );
-    log(`setWhitelistContract gasUsed: ${tx1.receipt.gasUsed}`);
+    const tx1 = await this.token.transferOwnership(this.crowdsale.address);
+    log(`transferOwnership gasUsed: ${tx1.receipt.gasUsed}`);
 
-    const tx2 = await this.token.transferOwnership(this.crowdsale.address);
-    log(`transferOwnership gasUsed: ${tx2.receipt.gasUsed}`);
+    const tx2 = await this.whitelisting.approveInvestor(investor);
+    log(`approveInvestor gasUsed: ${tx2.receipt.gasUsed}`);
 
-    const tx3 = await this.whitelisting.approveInvestor(investor);
-    log(`approveInvestor gasUsed: ${tx3.receipt.gasUsed}`);
-
-    const tx4 = await this.crowdsale.setNewValidator(validator, {
+    const tx3 = await this.crowdsale.setNewValidator(validator, {
       from: owner
     });
-    log(`setNewValidator gasUsed: ${tx4.receipt.gasUsed}`);
-    });
+    log(`setNewValidator gasUsed: ${tx3.receipt.gasUsed}`);
+  });
 
   it("should be created with proper parameters", async function() {
     (await this.crowdsale.whiteListingContract()).should.equal(
@@ -391,9 +394,11 @@ contract("Crowdsale", function([
     });
 
     it("should log events", async function() {
-      const rejectedMintBalance = await this.crowdsale.rejectedMintBalance(investor);
-      const tx = await this.crowdsale.claim({ from: investor, gasPrice: 0 }).should.be
-        .fulfilled;
+      const rejectedMintBalance = await this.crowdsale.rejectedMintBalance(
+        investor
+      );
+      const tx = await this.crowdsale.claim({ from: investor, gasPrice: 0 })
+        .should.be.fulfilled;
       log(`claim gasUsed: ${tx.receipt.gasUsed}`);
 
       const event = tx.logs.find(e => e.event === "Claimed");
@@ -405,7 +410,9 @@ contract("Crowdsale", function([
 
     it("should add refund contribution when claimed", async function() {
       const initialBalance = web3.eth.getBalance(investor);
-      const initialRejectedMintBalance = await this.crowdsale.rejectedMintBalance(investor);
+      const initialRejectedMintBalance = await this.crowdsale.rejectedMintBalance(
+        investor
+      );
 
       const tx = await this.crowdsale.claim({ from: investor, gasPrice: 0 })
         .should.be.fulfilled;
@@ -427,7 +434,13 @@ contract("Crowdsale", function([
 
   describe("setTokenContract", function() {
     it("should set new token contract", async function() {
-      const newToken = await Token.new(owner, tokensForOwner);
+      const newToken = await Token.new(
+        owner,
+        tokensForOwner,
+        this.whitelisting.address,
+        feeRecipient,
+        transferFee
+      );
       const tx = await this.crowdsale.setTokenContract(newToken.address).should
         .be.fulfilled;
       log(`setTokenContract gasUsed: ${tx.receipt.gasUsed}`);
@@ -442,7 +455,13 @@ contract("Crowdsale", function([
     });
 
     it("should throw if not called by owner", async function() {
-      const newToken = await Token.new(owner, tokensForOwner);
+      const newToken = await Token.new(
+        owner,
+        tokensForOwner,
+        this.whitelisting.address,
+        feeRecipient,
+        transferFee
+      );
 
       await this.crowdsale
         .setTokenContract(newToken.address, { from: investor })
