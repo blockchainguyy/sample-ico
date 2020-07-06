@@ -109,7 +109,7 @@ contract CompliantToken is Validator, MintableToken {
             require(_value.add(pendingApprovalAmount[_from][_to]).add(transferFee) <= allowed[_from][_to]);
             pendingApprovalAmount[_from][_to] = pendingApprovalAmount[_from][_to].add(_value).add(transferFee);
         }
-        
+
         pendingTransactions[currentNonce] = TransactionStruct(
             _from,
             _to,
@@ -171,7 +171,7 @@ contract CompliantToken is Validator, MintableToken {
         if (pendingTransactions[nonce].isTransferFrom) {
             if (pendingTransactions[nonce].from == feeRecipient) {
                 allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
-                .sub(pendingTransactions[nonce].value);
+                    .sub(pendingTransactions[nonce].value);
                 pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
                     .sub(pendingTransactions[nonce].value);
             } else {
@@ -179,7 +179,7 @@ contract CompliantToken is Validator, MintableToken {
                     .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
                 pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
                     .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
-        }
+            }
         }
 
         delete pendingTransactions[nonce];
@@ -188,7 +188,17 @@ contract CompliantToken is Validator, MintableToken {
 
     function rejectTransfer(uint256 nonce, uint256 reason) public onlyValidator {
         require(pendingTransactions[nonce].to != address(0));
-
+        
+        if (pendingTransactions[nonce].isTransferFrom) {
+            if (pendingTransactions[nonce].from == feeRecipient) {
+                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                    .sub(pendingTransactions[nonce].value);
+            } else {
+                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                    .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
+            }
+        }
+        
         TransferRejected(
             pendingTransactions[nonce].from,
             pendingTransactions[nonce].to,
