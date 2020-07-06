@@ -49,8 +49,9 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
     event Claimed(address indexed account, uint256 amount);
 
     function setWhitelistContract(address whitelistAddress) public 
-    onlyValidator 
-    checkIsAddressValid(whitelistAddress) {
+        onlyValidator 
+        checkIsAddressValid(whitelistAddress)
+    {
         whiteListingContract = Whitelist(whitelistAddress);
         emit WhiteListingContractSet(whiteListingContract);
     }
@@ -70,9 +71,10 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
     }
 
     function buyTokens(address beneficiary) public 
-    checkIsAddressValid(beneficiary)
-    checkIsInvestorApproved(beneficiary)
-    payable {
+        checkIsAddressValid(beneficiary)
+        checkIsInvestorApproved(beneficiary)
+        payable
+    {
         require(validPurchase());
 
         uint256 weiAmount = msg.value;
@@ -87,9 +89,10 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
     }
 
     function approveMint(uint256 nonce) external 
-    onlyValidator 
-    checkIsInvestorApproved(pendingMints[nonce].to)
-    returns (bool) {
+        onlyValidator 
+        checkIsInvestorApproved(pendingMints[nonce].to)
+        returns (bool)
+    {
         // update state
         weiRaised = weiRaised.add(pendingMints[nonce].weiAmount);
 
@@ -110,8 +113,9 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
     }
 
     function rejectMint(uint256 nonce, uint256 reason) external 
-    onlyValidator 
-    checkIsAddressValid(pendingMints[nonce].to) {
+        onlyValidator 
+        checkIsAddressValid(pendingMints[nonce].to)
+    {
         rejectedMintBalance[pendingMints[nonce].to] = rejectedMintBalance[pendingMints[nonce].to].add(pendingMints[nonce].weiAmount);
         
         emit MintRejected(
@@ -141,14 +145,16 @@ contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
     }
     
     function setTokenContract(address newToken) external 
-    onlyOwner
-    checkIsAddressValid(newToken) {
+        onlyOwner
+        checkIsAddressValid(newToken)
+    {
         token = CompliantToken(newToken);
     }
 
     function transferTokenOwnership(address newOwner) external 
-    onlyOwner
-    checkIsAddressValid(newOwner) {
+        onlyOwner
+        checkIsAddressValid(newOwner)
+    {
         token.transferOwnership(newOwner);
     }
 
