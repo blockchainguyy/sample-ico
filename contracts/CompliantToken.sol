@@ -1,6 +1,6 @@
 pragma solidity ^0.4.21;
 
-import "../zeppelin-solidity/contracts/token/ERC20/MintableToken.sol";
+import "./utility/MintableToken.sol";
 import "./utility/Validator.sol";
 import "./WhitelistContract.sol";
 
@@ -151,60 +151,63 @@ contract CompliantToken is Validator, MintableToken {
 
     function approveTransfer(uint256 nonce) external 
         onlyValidator 
-        checkIsAddressValid(pendingTransactions[nonce].from)
-        checkIsAddressValid(pendingTransactions[nonce].to)
-        checkIsInvestorApproved(pendingTransactions[nonce].from)
-        checkIsInvestorApproved(pendingTransactions[nonce].to)
         returns (bool)
-    {
-        if (pendingTransactions[nonce].from == feeRecipient) {
-            balances[pendingTransactions[nonce].from] = balances[pendingTransactions[nonce].from]
-                .sub(pendingTransactions[nonce].value);
-            balances[pendingTransactions[nonce].to] = balances[pendingTransactions[nonce].to]
-                .add(pendingTransactions[nonce].value);
-
-            if (pendingTransactions[nonce].spender != address(0)) {
-                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                    .sub(pendingTransactions[nonce].value);
-            } 
-            pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                .sub(pendingTransactions[nonce].value);
-
-            emit TransferWithFee(
-                pendingTransactions[nonce].from,
-                pendingTransactions[nonce].to,
-                pendingTransactions[nonce].value,
-                0
-            );
-        } else {
-            balances[pendingTransactions[nonce].from] = balances[pendingTransactions[nonce].from]
-                .sub(pendingTransactions[nonce].value.add(pendingTransactions[nonce].fee));
-            balances[pendingTransactions[nonce].to] = balances[pendingTransactions[nonce].to]
-                .add(pendingTransactions[nonce].value);
-            balances[feeRecipient] = balances[feeRecipient].add(pendingTransactions[nonce].fee);
-
-            if (pendingTransactions[nonce].spender != address(0)) {
-                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                    .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
-            }
-            pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
-                .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
-
-            emit TransferWithFee(
-                pendingTransactions[nonce].from,
-                pendingTransactions[nonce].to,
-                pendingTransactions[nonce].value,
-                pendingTransactions[nonce].fee
-            );
-        }
-
-        emit Transfer(
-            pendingTransactions[nonce].from,
-            pendingTransactions[nonce].to,
-            pendingTransactions[nonce].value
-        );
+    {   
+        address from = pendingTransactions[nonce].from;
+        address spender = pendingTransactions[nonce].spender;
+        address to = pendingTransactions[nonce].to;
+        uint256 value = pendingTransactions[nonce].value;
+        uint256 allowedTransferAmount = allowed[from][spender];
+        uint256 pendingAmount = pendingApprovalAmount[from][spender];
+        uint256 fee = pendingTransactions[nonce].fee;
+        uint256 balanceFrom = balances[from];
+        uint256 balanceTo = balances[to];
 
         delete pendingTransactions[nonce];
+
+        require(whiteListingContract.isInvestorApproved(from));
+        require(whiteListingContract.isInvestorApproved(to));
+
+        if (from == feeRecipient) {
+            fee = 0;
+            balanceFrom = balanceFrom.sub(value);
+            balanceTo = balanceTo.add(value);
+
+            if (spender != address(0)) {
+                allowedTransferAmount = allowedTransferAmount.sub(value);
+            } 
+            pendingAmount = pendingAmount.sub(value);
+
+        }
+         else {
+            balanceFrom = balanceFrom.sub(value.add(fee));
+            balanceTo = balanceTo.add(value);
+            balances[feeRecipient] = balances[feeRecipient].add(fee);
+
+            if (spender != address(0)) {
+                allowedTransferAmount = allowedTransferAmount.sub(value).sub(fee);
+            }
+            pendingAmount = pendingAmount.sub(value).sub(fee);
+
+        }
+
+        emit TransferWithFee(
+            from,
+            to,
+            value,
+            fee
+        );
+
+        emit Transfer(
+            from,
+            to,
+            value
+        );
+        
+        balances[from] = balanceFrom;
+        balances[to] = balanceTo;
+        allowed[from][spender] = allowedTransferAmount;
+        pendingApprovalAmount[from][spender] = pendingAmount;
         return true;
     }
 
