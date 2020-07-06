@@ -423,7 +423,7 @@ contract("CompliantToken", function([
         }
       ).should.be.rejectedWith(VMExceptionRevert);
     });
-
+    
     it("should not allow overdraw transactions when sender is feeRecipient using transferFrom", async function() {
 
       const tx1 = await this.token.transferFrom(
@@ -511,22 +511,6 @@ contract("CompliantToken", function([
     it("should revert if transfer value is invalid for fee recipent", async function() {
       await this.token
         .transferFrom(owner, feeRecipient, unallowedTransferAmount, {
-          from: approvedAddress
-        })
-        .should.be.rejectedWith(VMExceptionRevert);
-    });
-
-    it("should revert if approved value is invalid and transfer value is valid for normal user", async function() {
-      await this.token
-        .transferFrom(owner, feeRecipient, unapprovedTransferAmount, {
-          from: approvedAddress
-        })
-        .should.be.rejectedWith(VMExceptionRevert);
-    });
-
-    it("should revert if approved value is invalid and transfer value is valid for fee recipent", async function() {
-      await this.token
-        .transferFrom(owner, feeRecipient, unapprovedTransferAmount, {
           from: approvedAddress
         })
         .should.be.rejectedWith(VMExceptionRevert);
@@ -828,14 +812,19 @@ contract("CompliantToken", function([
       }).should.be.fulfilled;
       log(`approveInvestor for gasUsed: ${tx2.receipt.gasUsed}`);
 
-      const tx3 = await this.token.transfer(
+      const tx3 = await this.whitelisting.approveInvestor(feeRecipient, {
+        from: owner
+      }).should.be.fulfilled;
+      log(`approveInvestor for gasUsed: ${tx3.receipt.gasUsed}`);
+
+      const tx4 = await this.token.transfer(
         approvedAddress,
         allowedTransferAmount,
         {
           from: owner
         }
       ).should.be.fulfilled;
-      log(`transfer gasUsed: ${tx3.receipt.gasUsed}`);
+      log(`transfer gasUsed: ${tx4.receipt.gasUsed}`);
     });
 
     it("should be able to delete pending transactions", async function() {
@@ -855,6 +844,41 @@ contract("CompliantToken", function([
       );
       pendingTransaction[2].should.be.bignumber.equal(new BigNumber(0));
       pendingTransaction[3].should.be.bignumber.equal(new BigNumber(0));
+    });
+
+    it("should decrease pending approval amount when using transferFrom", async function() {
+      const tx = await this.token.approve(
+        feeRecipient,
+        allowedTransferAmount.add(transferFee),
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`approveAmount for gasUsed: ${tx.receipt.gasUsed}`);
+
+      const tx1 = await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        allowedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.fulfilled;
+      log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
+
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, feeRecipient);
+
+      const tx2 = await this.token.rejectTransfer(1, this.reason, {
+        from: validator
+      }).should.be.fulfilled;
+      log(`rejectTransfer gasUsed: ${tx2.receipt.gasUsed}`);
+
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, feeRecipient);
+
+      pendingApprovalAmountBefore
+        .sub(transferFee)
+        .sub(allowedTransferAmount)
+        .should.be.bignumber.equal(pendingApprovalAmountAfter)
     });
 
     it("should revert if called for non existing transfers", async function() {
