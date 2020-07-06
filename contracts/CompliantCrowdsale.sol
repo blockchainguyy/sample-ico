@@ -2,11 +2,11 @@ pragma solidity ^0.4.18;
 
 import "./WhitelistContract.sol";
 import "./CompliantToken.sol";
-import "../zeppelin-solidity/contracts/crowdsale/Crowdsale.sol";
+import "../zeppelin-solidity/contracts/crowdsale/FinalizableCrowdsale.sol";
 import "../zeppelin-solidity/contracts/ownership/Ownable.sol";
 
 
-contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
+contract CompliantCrowdsale is Ownable, Validator, FinalizableCrowdsale {
     Whitelist public whiteListingContract;
 
     struct MintStruct {
@@ -17,6 +17,7 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
 
     mapping (uint => MintStruct) public pendingMints;
     uint256 public currentMintNonce;
+    mapping (address => uint) public rejectedMintBalance;
 
     modifier checkIsInvestorApproved(address _account) {
         require(whiteListingContract.isInvestorApproved(_account));
@@ -44,6 +45,8 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
     );
 
     event WhiteListingContractSet(address indexed _whiteListingContract);
+
+    event Claimed(address indexed account, uint256 amount);
 
     function setWhitelistContract(address whitelistAddress) public 
     onlyValidator 
@@ -109,7 +112,7 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
     function rejectMint(uint256 nonce, uint256 reason) external 
     onlyValidator 
     checkIsAddressValid(pendingMints[nonce].to) {
-        pendingMints[nonce].to.transfer(pendingMints[nonce].weiAmount);
+        rejectedMintBalance[pendingMints[nonce].to] = rejectedMintBalance[pendingMints[nonce].to].add(pendingMints[nonce].weiAmount);
         
         MintRejected(
             pendingMints[nonce].to,
@@ -120,6 +123,16 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         );
         
         delete pendingMints[nonce];
+    }
+
+    function claim() external {
+        require(rejectedMintBalance[msg.sender] > 0);
+        uint256 value = rejectedMintBalance[msg.sender];
+        rejectedMintBalance[msg.sender] = 0;
+
+        msg.sender.transfer(value);
+
+        Claimed(msg.sender, value);
     }
 
     function finalization() internal {
