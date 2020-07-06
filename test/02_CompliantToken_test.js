@@ -402,6 +402,28 @@ contract("CompliantToken", function([
       pendingTransaction2[4].should.equal(true);
     });
 
+    it("should not allow overdraw transactions when sender is not a feeRecipient using transferFrom", async function() {
+
+      const tx1 = await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        approvedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.fulfilled;
+      log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
+
+      await this.token.transferFrom(
+        owner,
+        feeRecipient,
+        unapprovedTransferAmount,
+        {
+          from: approvedAddress
+        }
+      ).should.be.rejectedWith(VMExceptionRevert);
+    });
+
     it("should have an address(0) check on spenderAddress address", async function() {
       await this.token
         .transferFrom("0x0", feeRecipient, approvedTransferAmount, {
