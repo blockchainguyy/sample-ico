@@ -13,7 +13,7 @@ contract CompliantToken is Validator, MintableToken {
         address to;
         uint256 value;
         uint256 fee;
-        bool isTransferFrom;
+        address spender;
     }
 
     mapping (uint => TransactionStruct) public pendingTransactions;
@@ -57,7 +57,7 @@ contract CompliantToken is Validator, MintableToken {
         address indexed to,
         uint256 value,
         uint256 fee,
-        bool isTransferFrom
+        address spender
     );
 
     event WhiteListingContractSet(address indexed _whiteListingContract);
@@ -103,10 +103,10 @@ contract CompliantToken is Validator, MintableToken {
             _to,
             _value,
             transferFee,
-            false
+            address(0)
         );
 
-        emit RecordedPendingTransaction(msg.sender, _to, _value, transferFee, false);
+        emit RecordedPendingTransaction(msg.sender, _to, _value, transferFee, address(0));
         currentNonce++;
 
         return true;
@@ -122,13 +122,13 @@ contract CompliantToken is Validator, MintableToken {
         returns (bool)
     {
         if (_from == feeRecipient) {
-            require(_value.add(pendingApprovalAmount[_from][_to]) <= balances[_from]);
-            require(_value.add(pendingApprovalAmount[_from][_to]) <= allowed[_from][_to]);
-            pendingApprovalAmount[_from][_to] = pendingApprovalAmount[_from][_to].add(_value);
+            require(_value.add(pendingApprovalAmount[_from][msg.sender]) <= balances[_from]);
+            require(_value.add(pendingApprovalAmount[_from][msg.sender]) <= allowed[_from][msg.sender]);
+            pendingApprovalAmount[_from][msg.sender] = pendingApprovalAmount[_from][msg.sender].add(_value);
         } else {
-            require(_value.add(pendingApprovalAmount[_from][_to]).add(transferFee) <= balances[_from]);
-            require(_value.add(pendingApprovalAmount[_from][_to]).add(transferFee) <= allowed[_from][_to]);
-            pendingApprovalAmount[_from][_to] = pendingApprovalAmount[_from][_to].add(_value).add(transferFee);
+            require(_value.add(pendingApprovalAmount[_from][msg.sender]).add(transferFee) <= balances[_from]);
+            require(_value.add(pendingApprovalAmount[_from][msg.sender]).add(transferFee) <= allowed[_from][msg.sender]);
+            pendingApprovalAmount[_from][msg.sender] = pendingApprovalAmount[_from][msg.sender].add(_value).add(transferFee);
         }
 
         pendingTransactions[currentNonce] = TransactionStruct(
@@ -136,10 +136,10 @@ contract CompliantToken is Validator, MintableToken {
             _to,
             _value,
             transferFee,
-            true
+            msg.sender
         );
 
-        emit RecordedPendingTransaction(_from, _to, _value, transferFee, true);
+        emit RecordedPendingTransaction(_from, _to, _value, transferFee, msg.sender);
         currentNonce++;
 
         return true;
@@ -179,23 +179,23 @@ contract CompliantToken is Validator, MintableToken {
                 pendingTransactions[nonce].fee
             );
         }
-                    
+
         emit Transfer(
             pendingTransactions[nonce].from,
             pendingTransactions[nonce].to,
             pendingTransactions[nonce].value
         );
         
-        if (pendingTransactions[nonce].isTransferFrom) {
+        if (pendingTransactions[nonce].spender != 0x0) {
             if (pendingTransactions[nonce].from == feeRecipient) {
-                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
                     .sub(pendingTransactions[nonce].value);
-                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
                     .sub(pendingTransactions[nonce].value);
             } else {
-                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = allowed[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
                     .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
-                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
                     .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
             }
         }
@@ -206,14 +206,14 @@ contract CompliantToken is Validator, MintableToken {
 
     function rejectTransfer(uint256 nonce, uint256 reason) external 
         onlyValidator
-        checkIsAddressValid(pendingTransactions[nonce].to)
+        checkIsAddressValid(pendingTransactions[nonce].from)
     {        
-        if (pendingTransactions[nonce].isTransferFrom) {
+        if (pendingTransactions[nonce].spender != address(0)) {
             if (pendingTransactions[nonce].from == feeRecipient) {
-                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
                     .sub(pendingTransactions[nonce].value);
             } else {
-                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].to]
+                pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
                     .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
             }
         }
