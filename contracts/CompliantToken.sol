@@ -71,7 +71,7 @@ contract CompliantToken is Validator, MintableToken {
 
         (msg.sender == feeRecipient) ? 
             require(_value <= balances[msg.sender]) : 
-            require(_value + transferFee <= balances[msg.sender]);
+            require(_value.add(transferFee) <= balances[msg.sender]);
 
         pendingTransactions[currentNonce] = TransactionStruct(
             msg.sender,
