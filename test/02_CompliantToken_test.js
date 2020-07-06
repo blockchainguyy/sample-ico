@@ -222,6 +222,7 @@ contract("CompliantToken", function([
       pendingTransaction1[1].should.equal(feeRecipient);
       pendingTransaction1[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction1[3].should.be.bignumber.equal(transferFee);
+      pendingTransaction1[4].should.equal(false);
 
       const tx2 = await this.token.approveTransfer(0, { from: validator })
         .should.be.fulfilled;
@@ -242,6 +243,7 @@ contract("CompliantToken", function([
       pendingTransaction2[1].should.equal(approvedAddress);
       pendingTransaction2[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction2[3].should.be.bignumber.equal(transferFee);
+      pendingTransaction2[4].should.equal(false);
     });
 
     it("should have an address(0) check", async function() {
@@ -270,8 +272,8 @@ contract("CompliantToken", function([
 
     it("should revert if transfer value is invalid for normal user", async function() {
       await this.token
-        .transfer(approvedAddress, allowedTransferAmount, {
-          from: unapprovedAddress
+        .transfer(feeRecipient, unallowedTransferAmount, {
+          from: owner
         })
         .should.be.rejectedWith(VMExceptionRevert);
     });
@@ -316,6 +318,7 @@ contract("CompliantToken", function([
       event.args.to.should.equal(feeRecipient);
       event.args.value.should.be.bignumber.equal(allowedTransferAmount);
       event.args.fee.should.be.bignumber.equal(transferFee);
+      event.args.isTransferFrom.should.equal(false);
     });
   });
 
