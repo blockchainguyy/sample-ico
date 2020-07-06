@@ -17,6 +17,7 @@ contract CompliantToken is Validator, MintableToken {
     }
 
     mapping (uint => TransactionStruct) public pendingTransactions;
+    mapping (address => mapping (address => uint256)) public pendingApprovalAmount;
     uint256 public currentNonce = 0;
     uint256 public transferFee;
     address public feeRecipient;    
@@ -99,14 +100,16 @@ contract CompliantToken is Validator, MintableToken {
         require(whiteListingContract.isInvestorApproved(_from));
         require(whiteListingContract.isInvestorApproved(_to));
         
-        (_from == feeRecipient) ? 
-            require(_value <= balances[_from]) : 
-            require(_value.add(transferFee) <= balances[_from]);
+        if (_from == feeRecipient) {
+            require(_value.add(pendingApprovalAmount[_from][_to]) <= balances[_from]);
+            require(_value.add(pendingApprovalAmount[_from][_to]) <= allowed[_from][_to]);
+            pendingApprovalAmount[_from][_to] = pendingApprovalAmount[_from][_to].add(_value);
+        } else {
+            require(_value.add(pendingApprovalAmount[_from][_to]).add(transferFee) <= balances[_from]);
+            require(_value.add(pendingApprovalAmount[_from][_to]).add(transferFee) <= allowed[_from][_to]);
+            pendingApprovalAmount[_from][_to] = pendingApprovalAmount[_from][_to].add(_value).add(transferFee);
+        }
         
-        (_from == feeRecipient) ? 
-            require(_value <= allowed[_from][_to]) : 
-            require(_value.add(transferFee) <= allowed[_from][_to]);
-
         pendingTransactions[currentNonce] = TransactionStruct(
             _from,
             _to,
