@@ -91,6 +91,36 @@ contract CompliantToken is Validator, MintableToken {
         return true;
     }
 
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
+        require(_from != address(0));
+        require(_to != address(0));
+        require(_value > 0);
+        require(whiteListingContract.isInvestorApproved(msg.sender));
+        require(whiteListingContract.isInvestorApproved(_from));
+        require(whiteListingContract.isInvestorApproved(_to));
+        
+        (_from == feeRecipient) ? 
+            require(_value <= balances[_from]) : 
+            require(_value.add(transferFee) <= balances[_from]);
+        
+        (_from == feeRecipient) ? 
+            require(_value <= allowed[_from][_to]) : 
+            require(_value.add(transferFee) <= allowed[_from][_to]);
+
+        pendingTransactions[currentNonce] = TransactionStruct(
+            _from,
+            _to,
+            _value,
+            transferFee,
+            true
+        );
+
+        RecordedPendingTransaction(_from, _to, _value, transferFee, true);
+        currentNonce++;
+
+        return true;
+    }
+
     function approveTransfer(uint256 nonce) public onlyValidator returns (bool) {
         require(pendingTransactions[nonce].to != address(0));
         require(whiteListingContract.isInvestorApproved(pendingTransactions[nonce].from));
