@@ -15,7 +15,7 @@ contract Whitelist is Ownable {
     {
     }
 
-    function isInvestorApproved(address _investor) external constant returns (bool) {
+    function isInvestorApproved(address _investor) external view returns (bool) {
         require(_investor != address(0));
         return investorMap[_investor];
     }
