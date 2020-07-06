@@ -17,7 +17,7 @@ contract FinalizableCrowdsale is Crowdsale, Ownable {
 
     event Finalized();
  
-    function FinalizableCrowdsale(address _owner) public Ownable(_owner) {}
+    constructor(address _owner) public Ownable(_owner) {}
 
     /**
     * @dev Must be called after crowdsale ends, to do some extra finalization

@@ -66,7 +66,8 @@ contract CompliantToken is Validator, MintableToken {
 
     event FeeRecipientSet(address indexed previousRecipient, address indexed newRecipient);
 
-    function setWhitelistContract(address whitelistAddress) external
+    function setWhitelistContract(address whitelistAddress)
+        external
         onlyValidator
         checkIsAddressValid(whitelistAddress)
     {
@@ -74,12 +75,16 @@ contract CompliantToken is Validator, MintableToken {
         emit WhiteListingContractSet(whiteListingContract);
     }
 
-    function setFee(uint256 fee) external onlyValidator {
+    function setFee(uint256 fee)
+        external
+        onlyValidator
+    {
         emit FeeSet(transferFee, fee);
         transferFee = fee;
     }
 
-    function setFeeRecipient(address recipient) external
+    function setFeeRecipient(address recipient)
+        external
         onlyValidator
         checkIsAddressValid(recipient)
     {
@@ -87,7 +92,8 @@ contract CompliantToken is Validator, MintableToken {
         feeRecipient = recipient;
     }
 
-    function transfer(address _to, uint256 _value) public
+    function transfer(address _to, uint256 _value)
+        public
         checkIsInvestorApproved(msg.sender)
         checkIsInvestorApproved(_to)
         checkIsValueValid(_value)
@@ -117,7 +123,8 @@ contract CompliantToken is Validator, MintableToken {
         return true;
     }
 
-    function transferFrom(address _from, address _to, uint256 _value) public 
+    function transferFrom(address _from, address _to, uint256 _value)
+        public 
         checkIsInvestorApproved(_from)
         checkIsInvestorApproved(_to)
         checkIsValueValid(_value)
@@ -150,7 +157,8 @@ contract CompliantToken is Validator, MintableToken {
         return true;
     }
 
-    function approveTransfer(uint256 nonce) external 
+    function approveTransfer(uint256 nonce)
+        external 
         onlyValidator 
         checkIsInvestorApproved(pendingTransactions[nonce].from)
         checkIsInvestorApproved(pendingTransactions[nonce].to)
@@ -179,8 +187,7 @@ contract CompliantToken is Validator, MintableToken {
             } 
             pendingAmount = pendingAmount.sub(value);
 
-        }
-         else {
+        } else {
             balanceFrom = balanceFrom.sub(value.add(fee));
             balanceTo = balanceTo.add(value);
             balances[feeRecipient] = balances[feeRecipient].add(fee);
@@ -189,7 +196,6 @@ contract CompliantToken is Validator, MintableToken {
                 allowedTransferAmount = allowedTransferAmount.sub(value).sub(fee);
             }
             pendingAmount = pendingAmount.sub(value).sub(fee);
-
         }
 
         emit TransferWithFee(
@@ -212,7 +218,8 @@ contract CompliantToken is Validator, MintableToken {
         return true;
     }
 
-    function rejectTransfer(uint256 nonce, uint256 reason) external 
+    function rejectTransfer(uint256 nonce, uint256 reason)
+        external 
         onlyValidator
         checkIsAddressValid(pendingTransactions[nonce].from)
     {        

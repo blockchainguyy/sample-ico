@@ -15,7 +15,7 @@ contract Validator {
     * @dev The Validator constructor sets the original `validator` of the contract to the sender
     * account.
     */
-    function Validator() public {
+    constructor() public {
         validator = msg.sender;
     }
 

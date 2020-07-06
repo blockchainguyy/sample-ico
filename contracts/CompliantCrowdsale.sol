@@ -48,7 +48,7 @@ contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
 
     event Claimed(address indexed account, uint256 amount);
 
-    function CompliantCrowdsale(
+    constructor(
         address whitelistAddress,
         uint256 _startTime,
         uint256 _endTime,
@@ -64,7 +64,8 @@ contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
         setWhitelistContract(whitelistAddress);
     }
 
-    function setWhitelistContract(address whitelistAddress) public 
+    function setWhitelistContract(address whitelistAddress)
+        public 
         onlyValidator 
         checkIsAddressValid(whitelistAddress)
     {
@@ -72,9 +73,10 @@ contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
         emit WhiteListingContractSet(whiteListingContract);
     }
 
-    function buyTokens(address beneficiary) public 
-        checkIsInvestorApproved(beneficiary)
+    function buyTokens(address beneficiary)
+        public 
         payable
+        checkIsInvestorApproved(beneficiary)
     {
         require(validPurchase());
 
@@ -89,7 +91,8 @@ contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
         currentMintNonce++;
     }
 
-    function approveMint(uint256 nonce) external 
+    function approveMint(uint256 nonce)
+        external 
         onlyValidator 
         checkIsInvestorApproved(pendingMints[nonce].to)
         returns (bool)
@@ -113,7 +116,8 @@ contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
         return true;
     }
 
-    function rejectMint(uint256 nonce, uint256 reason) external 
+    function rejectMint(uint256 nonce, uint256 reason)
+        external 
         onlyValidator 
         checkIsAddressValid(pendingMints[nonce].to)
     {
@@ -145,14 +149,16 @@ contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
         super.finalization();
     }
     
-    function setTokenContract(address newToken) external 
+    function setTokenContract(address newToken)
+        external 
         onlyOwner
         checkIsAddressValid(newToken)
     {
         token = CompliantToken(newToken);
     }
 
-    function transferTokenOwnership(address newOwner) external 
+    function transferTokenOwnership(address newOwner)
+        external 
         onlyOwner
         checkIsAddressValid(newOwner)
     {

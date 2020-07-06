@@ -22,11 +22,10 @@ contract MintableToken is StandardToken, Ownable {
         _;
     }
 
-    function MintableToken(address _owner) 
+    constructor(address _owner) 
         public 
         Ownable(_owner) 
     {
-
     }
 
     /**

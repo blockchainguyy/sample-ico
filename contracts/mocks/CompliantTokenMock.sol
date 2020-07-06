@@ -4,7 +4,7 @@ import "../CompliantToken.sol";
 
 
 contract CompliantTokenMock is CompliantToken {
-    function CompliantTokenMock(address _owner, uint initialBalance)
+    constructor(address _owner, uint initialBalance)
         public 
         MintableToken(_owner)
         Validator()

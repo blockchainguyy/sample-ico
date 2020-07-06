@@ -9,11 +9,10 @@ contract Whitelist is Ownable {
     event Approved(address indexed investor);
     event Disapproved(address indexed investor);
 
-    function Whitelist(address _owner) 
+    constructor(address _owner) 
         public 
         Ownable(_owner) 
     {
-
     }
 
     function isInvestorApproved(address _investor) external constant returns (bool) {
