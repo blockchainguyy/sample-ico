@@ -39,7 +39,9 @@ contract CompliantToken is Validator, MintableToken {
     event RecordedPendingTransaction(
         address indexed from,
         address indexed to,
-        uint256 value, uint256 fee
+        uint256 value,
+        uint256 fee,
+        bool isTransferFrom
     );
 
     event WhiteListingContractSet(address indexed _whiteListingContract);
@@ -83,7 +85,7 @@ contract CompliantToken is Validator, MintableToken {
             false
         );
 
-        RecordedPendingTransaction(msg.sender, _to, _value, transferFee);
+        RecordedPendingTransaction(msg.sender, _to, _value, transferFee, false);
         currentNonce++;
 
         return true;
