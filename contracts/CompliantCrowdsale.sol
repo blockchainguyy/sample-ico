@@ -88,6 +88,8 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
 
     function rejectMint(uint256 nonce, uint256 reason) public onlyValidator {
         require(pendingMints[nonce].to != address(0));
+
+        pendingMints[nonce].to.transfer(pendingMints[nonce].weiAmount);
         
         MintRejected(
             pendingMints[nonce].to,
