@@ -13,6 +13,7 @@ contract CompliantToken is Validator, MintableToken {
         address to;
         uint256 value;
         uint256 fee;
+        bool isTransferFrom;
     }
 
     mapping (uint => TransactionStruct) public pendingTransactions;
@@ -78,7 +79,8 @@ contract CompliantToken is Validator, MintableToken {
             msg.sender,
             _to,
             _value,
-            transferFee
+            transferFee,
+            false
         );
 
         RecordedPendingTransaction(msg.sender, _to, _value, transferFee);
