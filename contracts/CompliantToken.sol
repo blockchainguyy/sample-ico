@@ -94,9 +94,13 @@ contract CompliantToken is Validator, MintableToken {
         checkIsValueValid(_value)
         returns (bool)
     {
-        (msg.sender == feeRecipient) ? 
-            require(_value <= balances[msg.sender]) : 
-            require(_value.add(transferFee) <= balances[msg.sender]);
+        if (msg.sender == feeRecipient) {
+            require(_value.add(pendingApprovalAmount[msg.sender][address(0)]) <= balances[msg.sender]);
+            pendingApprovalAmount[msg.sender][address(0)] = pendingApprovalAmount[msg.sender][address(0)].add(_value);
+        } else {
+            require(_value.add(pendingApprovalAmount[msg.sender][address(0)]).add(transferFee) <= balances[msg.sender]);
+            pendingApprovalAmount[msg.sender][address(0)] = pendingApprovalAmount[msg.sender][address(0)].add(_value).add(transferFee);
+        }
 
         pendingTransactions[currentNonce] = TransactionStruct(
             msg.sender,
