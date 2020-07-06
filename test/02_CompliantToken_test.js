@@ -341,23 +341,23 @@ contract("CompliantToken", function([
       }).should.be.fulfilled;
       log(`approveInvestor for gasUsed: ${tx3.receipt.gasUsed}`);
 
-      const tx5 = await this.token.approve(
+      const tx4 = await this.token.approve(
         feeRecipient,
-        approvedTransferAmount.add(transferFee),
+        allowedTransferAmount.add(transferFee).add(transferFee),
         {
           from: owner
         }
       ).should.be.fulfilled;
-      log(`approveAmount for gasUsed: ${tx5.receipt.gasUsed}`);
+      log(`approveAmount for gasUsed: ${tx4.receipt.gasUsed}`);
 
-      const tx6 = await this.token.approve(
+      const tx5 = await this.token.approve(
         approvedAddress,
-        approvedTransferAmount,
+        allowedTransferAmount,
         {
           from: feeRecipient
         }
       ).should.be.fulfilled;
-      log(`approveAmount for gasUsed: ${tx6.receipt.gasUsed}`);
+      log(`approveAmount for gasUsed: ${tx5.receipt.gasUsed}`);
     });
 
     it("should record pending transactions", async function() {
@@ -716,7 +716,7 @@ contract("CompliantToken", function([
       const tx5 = await this.token.transferFrom(
         feeRecipient,
         approvedAddress,
-        allowedTransferAmount,
+        approvedTransferAmount,
         {
           from: owner
         }
@@ -733,7 +733,7 @@ contract("CompliantToken", function([
 
       balanceBefore
         .sub(balanceAfter)
-        .should.be.bignumber.equal(allowedTransferAmount);
+        .should.be.bignumber.equal(approvedTransferAmount);
     });
 
     it("should log event", async function() {
