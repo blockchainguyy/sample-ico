@@ -34,7 +34,7 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
     );
 
     function CompliantCrowdsale(
-        address reference,
+        address whitelistAddress,
         uint256 _startTime,
         uint256 _endTime,
         uint256 _rate,
@@ -44,8 +44,8 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         public
         Crowdsale(_startTime, _endTime, _rate, _wallet, _token)
     {
-        require(reference != address(0));
-        whiteListingContract = Whitelist(reference);
+        require(whitelistAddress != address(0));
+        whiteListingContract = Whitelist(whitelistAddress);
     }
 
     function buyTokens(address beneficiary) public payable {
