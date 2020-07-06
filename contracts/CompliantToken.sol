@@ -26,7 +26,7 @@ contract CompliantToken is Validator, MintableToken {
     event FeeRecipientSet(address indexed previousRecipient, address indexed newRecipient);
     event RecordedPendingTransaction(address indexed from, address indexed to, uint256 value, uint256 fee);
 
-    function setWhitelistContract(address reference) public onlyOwner {
+    function setWhitelistContract(address reference) public onlyValidator {
         require(reference != address(0));
         whiteListingContract = Whitelist(reference);
         WhiteListingContractSet(whiteListingContract);
@@ -37,7 +37,7 @@ contract CompliantToken is Validator, MintableToken {
         transferFee = fee;
     }
 
-    function setFeeRecipient(address recipient) public onlyOwner {
+    function setFeeRecipient(address recipient) public onlyValidator {
         require(recipient != address(0));
         FeeRecipientSet(feeRecipient, recipient);
         feeRecipient = recipient;
