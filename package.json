@@ -23,7 +23,7 @@
   },
   "scripts": {
     "test": "scripts/test.sh",
-    "compile": "node_modules/.bin/truffle compile"
+    "compile": "node_modules/.bin/truffle compile --reset --compile-all"
   },
   "repository": {
     "type": "git",
