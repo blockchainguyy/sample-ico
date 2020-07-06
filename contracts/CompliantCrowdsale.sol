@@ -18,8 +18,20 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
     mapping (uint => MintStruct) public pendingMints;
     uint256 public currentMintNonce;
 
-    event MintRejected(address indexed to, uint256 value, uint256 amount, uint256 indexed nonce, uint256 reason);
-    event ContributionRegistered(address beneficiary, uint256 tokens, uint256 weiAmount, uint256 nonce);
+    event MintRejected(
+        address indexed to,
+        uint256 value,
+        uint256 amount,
+        uint256 indexed nonce,
+        uint256 reason
+    );
+
+    event ContributionRegistered(
+        address beneficiary,
+        uint256 tokens,
+        uint256 weiAmount,
+        uint256 nonce
+    );
 
     function CompliantCrowdsale(
         address reference,
@@ -60,7 +72,14 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
 
         //No need to use mint-approval on token side, since the minting is already approved in the crowdsale side
         token.mint(pendingMints[nonce].to, pendingMints[nonce].tokens);
-        TokenPurchase(msg.sender, pendingMints[nonce].to, pendingMints[nonce].weiAmount, pendingMints[nonce].tokens);
+        
+        TokenPurchase(
+            msg.sender,
+            pendingMints[nonce].to,
+            pendingMints[nonce].weiAmount,
+            pendingMints[nonce].tokens
+        );
+
         forwardFunds(pendingMints[nonce].weiAmount);
         delete pendingMints[nonce];
 
@@ -69,7 +88,15 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
 
     function rejectMint(uint256 nonce, uint256 reason) public onlyValidator {
         require(pendingMints[nonce].to != address(0));
-        MintRejected(pendingMints[nonce].to, pendingMints[nonce].tokens, pendingMints[nonce].weiAmount, nonce, reason);
+        
+        MintRejected(
+            pendingMints[nonce].to,
+            pendingMints[nonce].tokens,
+            pendingMints[nonce].weiAmount,
+            nonce,
+            reason
+        );
+        
         delete pendingMints[nonce];
     }
 
