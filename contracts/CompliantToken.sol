@@ -66,6 +66,7 @@ contract CompliantToken is Validator, MintableToken {
 
     function transfer(address _to, uint256 _value) public returns (bool) {
         require(_to != address(0));
+        require(_value > 0);
         require(whiteListingContract.isInvestorApproved(msg.sender));
         require(whiteListingContract.isInvestorApproved(_to));
 
