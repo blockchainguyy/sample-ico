@@ -12,7 +12,7 @@ const should = require("chai")
   .should();
 
 const Crowdsale = artifacts.require("CompliantCrowdsale");
-const Token = artifacts.require("CompliantToken");
+const Token = artifacts.require("CompliantTokenMock");
 const Whitelisting = artifacts.require("Whitelist");
 
 contract("Crowdsale", function([
@@ -24,6 +24,7 @@ contract("Crowdsale", function([
 ]) {
   const rate = new BigNumber(10);
   const investmentAmount = ether(4);
+  const tokensForOwner = new BigNumber(1000);
 
   before(async function() {
     //Advance to the next block to correctly read time in the solidity "now" function interpreted by testrpc
@@ -36,15 +37,16 @@ contract("Crowdsale", function([
     this.endTime = this.startTime + duration.weeks(1);
     this.afterEndTime = this.endTime + duration.seconds(1);
 
-    this.whitelisting = await Whitelisting.new();
-    this.token = await Token.new();
+    this.whitelisting = await Whitelisting.new(owner);
+    this.token = await Token.new(owner, tokensForOwner);
     this.crowdsale = await Crowdsale.new(
       this.whitelisting.address,
       this.startTime,
       this.endTime,
       rate,
       wallet,
-      this.token.address
+      this.token.address,
+      owner
     );
 
     const tx1 = await this.token.setWhitelistContract(
@@ -62,7 +64,7 @@ contract("Crowdsale", function([
       from: owner
     });
     log(`setNewValidator gasUsed: ${tx4.receipt.gasUsed}`);
-  });
+    });
 
   it("should be created with proper parameters", async function() {
     (await this.crowdsale.whiteListingContract()).should.equal(
@@ -85,7 +87,7 @@ contract("Crowdsale", function([
 
   describe("setWhitelistContract", function() {
     it("should be able to change whitelisting contract", async function() {
-      const newWhitelisting = await Whitelisting.new();
+      const newWhitelisting = await Whitelisting.new(owner);
 
       const { receipt } = await this.crowdsale.setWhitelistContract(
         newWhitelisting.address,
@@ -105,7 +107,7 @@ contract("Crowdsale", function([
     });
 
     it("should reject if not called by validator", async function() {
-      const newWhitelisting = await Whitelisting.new();
+      const newWhitelisting = await Whitelisting.new(owner);
 
       await this.crowdsale
         .setWhitelistContract(newWhitelisting.address, {
@@ -115,7 +117,7 @@ contract("Crowdsale", function([
     });
 
     it("should log event", async function() {
-      const newWhitelisting = await Whitelisting.new();
+      const newWhitelisting = await Whitelisting.new(owner);
 
       const tx = await this.crowdsale.setWhitelistContract(
         newWhitelisting.address,
@@ -425,7 +427,7 @@ contract("Crowdsale", function([
 
   describe("setTokenContract", function() {
     it("should set new token contract", async function() {
-      const newToken = await Token.new();
+      const newToken = await Token.new(owner, tokensForOwner);
       const tx = await this.crowdsale.setTokenContract(newToken.address).should
         .be.fulfilled;
       log(`setTokenContract gasUsed: ${tx.receipt.gasUsed}`);
@@ -440,7 +442,7 @@ contract("Crowdsale", function([
     });
 
     it("should throw if not called by owner", async function() {
-      const newToken = await Token.new();
+      const newToken = await Token.new(owner, tokensForOwner);
 
       await this.crowdsale
         .setTokenContract(newToken.address, { from: investor })

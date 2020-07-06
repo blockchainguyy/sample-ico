@@ -34,7 +34,7 @@ contract("CompliantToken", function([
   });
 
   beforeEach(async function() {
-    this.whitelisting = await Whitelist.new();
+    this.whitelisting = await Whitelist.new(owner);
     this.token = await Token.new(owner, tokensForOwner);
 
     const tx1 = await this.token.setWhitelistContract(
@@ -69,7 +69,7 @@ contract("CompliantToken", function([
 
   describe("setWhitelistContract", function() {
     it("should be able to change whitelisting contract", async function() {
-      const newWhitelisting = await Whitelist.new();
+      const newWhitelisting = await Whitelist.new(owner);
 
       const { receipt } = await this.token.setWhitelistContract(
         newWhitelisting.address,
@@ -89,7 +89,7 @@ contract("CompliantToken", function([
     });
 
     it("should reject if not called by validator", async function() {
-      const newWhitelisting = await Whitelist.new();
+      const newWhitelisting = await Whitelist.new(owner);
 
       await this.token
         .setWhitelistContract(newWhitelisting.address, {
@@ -99,7 +99,7 @@ contract("CompliantToken", function([
     });
 
     it("should log event", async function() {
-      const newWhitelisting = await Whitelist.new();
+      const newWhitelisting = await Whitelist.new(owner);
 
       const tx = await this.token.setWhitelistContract(
         newWhitelisting.address,
