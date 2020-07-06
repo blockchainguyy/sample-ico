@@ -23,7 +23,7 @@ contract("Crowdsale", function([
   unApprovedinvestor
 ]) {
   const rate = new BigNumber(10);
-  const investmentAmount = ether(5);
+  const investmentAmount = ether(4);
 
   before(async function() {
     //Advance to the next block to correctly read time in the solidity "now" function interpreted by testrpc
@@ -341,16 +341,85 @@ contract("Crowdsale", function([
       event.args.reason.should.be.bignumber.equal(new BigNumber(5));
     });
 
-    it("should refund the contribution when rejected", async function() {
-      const initial = web3.eth.getBalance(investor);
+    it("should add refund value to the rejectedMintBalance and not decreacse balance when rejected", async function() {
+      const initialBalance = web3.eth.getBalance(investor);
+      const initialRejectedMintBalance = await this.crowdsale.rejectedMintBalance(
+        investor
+      );
 
       const tx = await this.crowdsale.rejectMint(0, 5, { from: validator })
         .should.be.fulfilled;
       log(`rejectMint gasUsed: ${tx.receipt.gasUsed}`);
 
-      const final = web3.eth.getBalance(investor);
+      const finalBalance = web3.eth.getBalance(investor);
+      const finalRejectedMintBalance = await this.crowdsale.rejectedMintBalance(
+        investor
+      );
 
-      final.sub(initial).should.be.bignumber.equal(investmentAmount);
+      finalBalance.sub(initialBalance).should.be.bignumber.equal(0);
+      finalRejectedMintBalance
+        .sub(initialRejectedMintBalance)
+        .should.be.bignumber.equal(investmentAmount);
+    });
+  });
+
+  describe("claim", function() {
+    beforeEach(async function() {
+      await increaseTimeTo(this.startTime);
+
+      const tx = await this.crowdsale.buyTokens(investor, {
+        value: investmentAmount,
+        gasPrice: 0
+      }).should.be.fulfilled;
+      log(`buyTokens gasUsed: ${tx.receipt.gasUsed}`);
+
+      const tx1 = await this.crowdsale.rejectMint(0, 5, { from: validator })
+        .should.be.fulfilled;
+      log(`rejectMint gasUsed: ${tx1.receipt.gasUsed}`);
+    });
+
+    it("should throw if claim balance is invalid", async function() {
+      const tx = await this.crowdsale.claim({ from: investor }).should.be
+        .fulfilled;
+      log(`claim gasUsed: ${tx.receipt.gasUsed}`);
+
+      await this.crowdsale
+        .claim({ from: investor })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should log events", async function() {
+      const rejectedMintBalance = await this.crowdsale.rejectedMintBalance(investor);
+      const tx = await this.crowdsale.claim({ from: investor, gasPrice: 0 }).should.be
+        .fulfilled;
+      log(`claim gasUsed: ${tx.receipt.gasUsed}`);
+
+      const event = tx.logs.find(e => e.event === "Claimed");
+
+      should.exist(event);
+      event.args.account.should.equal(investor);
+      event.args.amount.should.be.bignumber.equal(rejectedMintBalance);
+    });
+
+    it("should add refund contribution when claimed", async function() {
+      const initialBalance = web3.eth.getBalance(investor);
+      const initialRejectedMintBalance = await this.crowdsale.rejectedMintBalance(investor);
+
+      const tx = await this.crowdsale.claim({ from: investor, gasPrice: 0 })
+        .should.be.fulfilled;
+      log(`claim gasUsed: ${tx.receipt.gasUsed}`);
+
+      const finalBalance = web3.eth.getBalance(investor);
+      const finalRejectedMintBalance = await this.crowdsale.rejectedMintBalance(
+        investor
+      );
+
+      finalBalance
+        .sub(initialBalance)
+        .should.be.bignumber.equal(initialRejectedMintBalance);
+      initialRejectedMintBalance
+        .sub(finalRejectedMintBalance)
+        .should.be.bignumber.equal(investmentAmount);
     });
   });
 
