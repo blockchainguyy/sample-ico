@@ -224,7 +224,7 @@ contract("CompliantToken", function([
       pendingTransaction1[1].should.equal(feeRecipient);
       pendingTransaction1[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction1[3].should.be.bignumber.equal(transferFee);
-      pendingTransaction1[4].should.equal('0x0000000000000000000000000000000000000000');
+      pendingTransaction1[4].should.equal("0x0000000000000000000000000000000000000000");
 
       const tx2 = await this.token.approveTransfer(0, { from: validator })
         .should.be.fulfilled;
@@ -245,7 +245,60 @@ contract("CompliantToken", function([
       pendingTransaction2[1].should.equal(approvedAddress);
       pendingTransaction2[2].should.be.bignumber.equal(allowedTransferAmount);
       pendingTransaction2[3].should.be.bignumber.equal(transferFee);
-      pendingTransaction2[4].should.equal('0x0000000000000000000000000000000000000000');
+      pendingTransaction2[4].should.equal("0x0000000000000000000000000000000000000000");
+    });
+
+    it("should not allow overdraw transactions when sender is not a feeRecipient using transfer", async function() {
+      
+      const tx1 = await this.token.transfer(
+        feeRecipient,
+        tokensForOwner.sub(transferFee),
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
+      
+      await this.token.transfer(
+        feeRecipient,
+        approvedTransferAmount,
+        {
+          from: owner
+        }
+      ).should.be.rejectedWith(VMExceptionRevert);
+    });
+    
+    it("should not allow overdraw transactions when sender is feeRecipient using transfer", async function() {
+
+      const tx1 = await this.token.transfer(
+        feeRecipient,
+        allowedTransferAmount,
+        {
+          from: owner
+        }
+      ).should.be.fulfilled;
+      log(`transfer gasUsed: ${tx1.receipt.gasUsed}`);
+
+      const tx2 = await this.token.approveTransfer(0, { from: validator })
+        .should.be.fulfilled;
+      log(`approveTransfer gasUsed: ${tx2.receipt.gasUsed}`);
+
+      const tx3 = await this.token.transfer(
+        approvedAddress,
+        allowedTransferAmount,
+        {
+          from: feeRecipient
+        }
+      ).should.be.fulfilled;
+      log(`transfer gasUsed: ${tx3.receipt.gasUsed}`);
+
+      await this.token.transfer(
+        approvedAddress,
+        unapprovedTransferAmount,
+        {
+          from: feeRecipient
+        }
+      ).should.be.rejectedWith(VMExceptionRevert);
     });
 
     it("should have an address(0) check", async function() {
@@ -320,7 +373,7 @@ contract("CompliantToken", function([
       event.args.to.should.equal(feeRecipient);
       event.args.value.should.be.bignumber.equal(allowedTransferAmount);
       event.args.fee.should.be.bignumber.equal(transferFee);
-      event.args.spender.should.equal('0x0000000000000000000000000000000000000000');
+      event.args.spender.should.equal("0x0000000000000000000000000000000000000000");
     });
   });
 
@@ -423,7 +476,7 @@ contract("CompliantToken", function([
         }
       ).should.be.rejectedWith(VMExceptionRevert);
     });
-    
+
     it("should not allow overdraw transactions when sender is feeRecipient using transferFrom", async function() {
 
       const tx1 = await this.token.transferFrom(
