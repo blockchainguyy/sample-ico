@@ -57,7 +57,7 @@ contract CompliantToken is Validator, MintableToken {
         address indexed to,
         uint256 value,
         uint256 fee,
-        address spender
+        address indexed spender
     );
 
     event WhiteListingContractSet(address indexed _whiteListingContract);
@@ -88,18 +88,19 @@ contract CompliantToken is Validator, MintableToken {
     }
 
     function transfer(address _to, uint256 _value) public
-        checkIsAddressValid(_to)
         checkIsInvestorApproved(msg.sender)
         checkIsInvestorApproved(_to)
         checkIsValueValid(_value)
         returns (bool)
     {
+        uint256 pendingAmount = pendingApprovalAmount[msg.sender][address(0)];
+
         if (msg.sender == feeRecipient) {
-            require(_value.add(pendingApprovalAmount[msg.sender][address(0)]) <= balances[msg.sender]);
-            pendingApprovalAmount[msg.sender][address(0)] = pendingApprovalAmount[msg.sender][address(0)].add(_value);
+            require(_value.add(pendingAmount) <= balances[msg.sender]);
+            pendingApprovalAmount[msg.sender][address(0)] = pendingAmount.add(_value);
         } else {
-            require(_value.add(pendingApprovalAmount[msg.sender][address(0)]).add(transferFee) <= balances[msg.sender]);
-            pendingApprovalAmount[msg.sender][address(0)] = pendingApprovalAmount[msg.sender][address(0)].add(_value).add(transferFee);
+            require(_value.add(pendingAmount).add(transferFee) <= balances[msg.sender]);
+            pendingApprovalAmount[msg.sender][address(0)] = pendingAmount.add(_value).add(transferFee);
         }
 
         pendingTransactions[currentNonce] = TransactionStruct(
@@ -117,22 +118,22 @@ contract CompliantToken is Validator, MintableToken {
     }
 
     function transferFrom(address _from, address _to, uint256 _value) public 
-        checkIsAddressValid(_from)
-        checkIsAddressValid(_to)
-        checkIsInvestorApproved(msg.sender)
         checkIsInvestorApproved(_from)
         checkIsInvestorApproved(_to)
         checkIsValueValid(_value)
         returns (bool)
     {
+        uint256 allowedTransferAmount = allowed[_from][msg.sender];
+        uint256 pendingAmount = pendingApprovalAmount[_from][msg.sender];
+        
         if (_from == feeRecipient) {
-            require(_value.add(pendingApprovalAmount[_from][msg.sender]) <= balances[_from]);
-            require(_value.add(pendingApprovalAmount[_from][msg.sender]) <= allowed[_from][msg.sender]);
-            pendingApprovalAmount[_from][msg.sender] = pendingApprovalAmount[_from][msg.sender].add(_value);
+            require(_value.add(pendingAmount) <= balances[_from]);
+            require(_value.add(pendingAmount) <= allowedTransferAmount);
+            pendingApprovalAmount[_from][msg.sender] = pendingAmount.add(_value);
         } else {
-            require(_value.add(pendingApprovalAmount[_from][msg.sender]).add(transferFee) <= balances[_from]);
-            require(_value.add(pendingApprovalAmount[_from][msg.sender]).add(transferFee) <= allowed[_from][msg.sender]);
-            pendingApprovalAmount[_from][msg.sender] = pendingApprovalAmount[_from][msg.sender].add(_value).add(transferFee);
+            require(_value.add(pendingAmount).add(transferFee) <= balances[_from]);
+            require(_value.add(pendingAmount).add(transferFee) <= allowedTransferAmount);
+            pendingApprovalAmount[_from][msg.sender] = pendingAmount.add(_value).add(transferFee);
         }
 
         pendingTransactions[currentNonce] = TransactionStruct(
@@ -151,6 +152,9 @@ contract CompliantToken is Validator, MintableToken {
 
     function approveTransfer(uint256 nonce) external 
         onlyValidator 
+        checkIsInvestorApproved(pendingTransactions[nonce].from)
+        checkIsInvestorApproved(pendingTransactions[nonce].to)
+        checkIsValueValid(pendingTransactions[nonce].value)
         returns (bool)
     {   
         address from = pendingTransactions[nonce].from;
@@ -164,9 +168,6 @@ contract CompliantToken is Validator, MintableToken {
         uint256 balanceTo = balances[to];
 
         delete pendingTransactions[nonce];
-
-        require(whiteListingContract.isInvestorApproved(from));
-        require(whiteListingContract.isInvestorApproved(to));
 
         if (from == feeRecipient) {
             fee = 0;
@@ -215,16 +216,19 @@ contract CompliantToken is Validator, MintableToken {
         onlyValidator
         checkIsAddressValid(pendingTransactions[nonce].from)
     {        
-        if (pendingTransactions[nonce].from == feeRecipient) {
-            pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
+        address from = pendingTransactions[nonce].from;
+        address spender = pendingTransactions[nonce].spender;
+
+        if (from == feeRecipient) {
+            pendingApprovalAmount[from][spender] = pendingApprovalAmount[from][spender]
                 .sub(pendingTransactions[nonce].value);
         } else {
-            pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender] = pendingApprovalAmount[pendingTransactions[nonce].from][pendingTransactions[nonce].spender]
+            pendingApprovalAmount[from][spender] = pendingApprovalAmount[from][spender]
                 .sub(pendingTransactions[nonce].value).sub(pendingTransactions[nonce].fee);
         }
         
         emit TransferRejected(
-            pendingTransactions[nonce].from,
+            from,
             pendingTransactions[nonce].to,
             pendingTransactions[nonce].value,
             nonce,
