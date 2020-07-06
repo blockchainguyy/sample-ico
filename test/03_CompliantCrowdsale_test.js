@@ -11,13 +11,9 @@ const should = require("chai")
   .use(require("chai-bignumber")(BigNumber))
   .should();
 
-const Crowdsale = artifacts.require(
-  "CompliantCrowdsale"
-);
-const Token = artifacts.require(
-  "TransactionApprovalApprovedInvestorTokenWithFees"
-);
-const Whitelisting = artifacts.require("ApprovedInvestors");
+const Crowdsale = artifacts.require("CompliantCrowdsale");
+const Token = artifacts.require("CompliantToken");
+const Whitelisting = artifacts.require("Whitelist");
 
 contract("Crowdsale", function([
   owner,
@@ -51,10 +47,10 @@ contract("Crowdsale", function([
       this.token.address
     );
 
-    const tx1 = await this.token.setApprovedInvestorsContract(
+    const tx1 = await this.token.setWhitelistContract(
       this.whitelisting.address
     );
-    log(`setApprovedInvestorsContract gasUsed: ${tx1.receipt.gasUsed}`);
+    log(`setWhitelistContract gasUsed: ${tx1.receipt.gasUsed}`);
 
     const tx2 = await this.token.transferOwnership(this.crowdsale.address);
     log(`transferOwnership gasUsed: ${tx2.receipt.gasUsed}`);
@@ -62,7 +58,9 @@ contract("Crowdsale", function([
     const tx3 = await this.whitelisting.approveInvestor(investor);
     log(`approveInvestor gasUsed: ${tx3.receipt.gasUsed}`);
 
-    const tx4 = await this.crowdsale.setNewValidator(validator, { from: owner });
+    const tx4 = await this.crowdsale.setNewValidator(validator, {
+      from: owner
+    });
     log(`setNewValidator gasUsed: ${tx4.receipt.gasUsed}`);
   });
 
@@ -177,7 +175,8 @@ contract("Crowdsale", function([
     });
 
     it("should mint tokens to beneficiary", async function() {
-      const tx = await this.crowdsale.approveMint(0, {from: validator}).should.be.fulfilled;
+      const tx = await this.crowdsale.approveMint(0, { from: validator }).should
+        .be.fulfilled;
       log(`approveMint gasUsed: ${tx.receipt.gasUsed}`);
 
       (await this.token.balanceOf(investor)).should.be.bignumber.equal(
@@ -187,8 +186,10 @@ contract("Crowdsale", function([
 
     it("should forward funds to wallet", async function() {
       const initialBalance = await web3.eth.getBalance(wallet);
-      const tx = await this.crowdsale.approveMint(0, { gasPrice: 0, from: validator }).should.be
-        .fulfilled;
+      const tx = await this.crowdsale.approveMint(0, {
+        gasPrice: 0,
+        from: validator
+      }).should.be.fulfilled;
       log(`approveMint gasUsed: ${tx.receipt.gasUsed}`);
 
       const finalBalance = await web3.eth.getBalance(wallet);
@@ -198,7 +199,8 @@ contract("Crowdsale", function([
     });
 
     it("should delete pendingMints after approving them", async function() {
-      const tx = await this.crowdsale.approveMint(0, {from: validator}).should.be.fulfilled;
+      const tx = await this.crowdsale.approveMint(0, { from: validator }).should
+        .be.fulfilled;
       log(`approveMint gasUsed: ${tx.receipt.gasUsed}`);
 
       const pendingMint = await this.crowdsale.pendingMints(0);
@@ -209,8 +211,10 @@ contract("Crowdsale", function([
     });
 
     it("should log event", async function() {
-      const tx = await this.crowdsale.approveMint(0, { gasPrice: 0, from: validator }).should.be
-        .fulfilled;
+      const tx = await this.crowdsale.approveMint(0, {
+        gasPrice: 0,
+        from: validator
+      }).should.be.fulfilled;
       log(`approveMint gasUsed: ${tx.receipt.gasUsed}`);
 
       const event = tx.logs.find(e => e.event === "TokenPurchase");
@@ -226,7 +230,7 @@ contract("Crowdsale", function([
       const tx = await this.whitelisting.disapproveInvestor(investor);
 
       await this.crowdsale
-        .approveMint(0, {from: validator})
+        .approveMint(0, { from: validator })
         .should.be.rejectedWith(VMExceptionRevert);
     });
 
@@ -249,7 +253,8 @@ contract("Crowdsale", function([
     });
 
     it("should delete pendingMints", async function() {
-      const tx = await this.crowdsale.rejectMint(0, 0, {from: validator}).should.be.fulfilled;
+      const tx = await this.crowdsale.rejectMint(0, 0, { from: validator })
+        .should.be.fulfilled;
       log(`rejectMint gasUsed: ${tx.receipt.gasUsed}`);
 
       const pendingMint = await this.crowdsale.pendingMints(0);
@@ -267,12 +272,13 @@ contract("Crowdsale", function([
 
     it("should throw for non existing mints", async function() {
       await this.crowdsale
-        .rejectMint(1, 0, {from: validator})
+        .rejectMint(1, 0, { from: validator })
         .should.be.rejectedWith(VMExceptionRevert);
     });
 
     it("should log events", async function() {
-      const tx = await this.crowdsale.rejectMint(0, 5, {from: validator}).should.be.fulfilled;
+      const tx = await this.crowdsale.rejectMint(0, 5, { from: validator })
+        .should.be.fulfilled;
       log(`rejectMint gasUsed: ${tx.receipt.gasUsed}`);
 
       const event = tx.logs.find(e => e.event === "MintRejected");
