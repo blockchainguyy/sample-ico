@@ -104,9 +104,9 @@ contract CompliantToken is Validator, MintableToken {
             );
             
             TransferWithFee(
-                pendingTransactions[0].from,
-                pendingTransactions[0].to,
-                pendingTransactions[0].value,
+                pendingTransactions[nonce].from,
+                pendingTransactions[nonce].to,
+                pendingTransactions[nonce].value,
                 0
             );
         } else {
