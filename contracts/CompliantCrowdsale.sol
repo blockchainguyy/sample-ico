@@ -145,7 +145,7 @@ contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
     }
 
     function finalization() internal {
-        transferOwnership(validator);
+        transferTokenOwnership(validator);
         super.finalization();
     }
     
@@ -158,7 +158,7 @@ contract CompliantCrowdsale is Validator, FinalizableCrowdsale {
     }
 
     function transferTokenOwnership(address newOwner)
-        external 
+        public 
         onlyOwner
         checkIsAddressValid(newOwner)
     {
