@@ -368,6 +368,17 @@ contract("Crowdsale", function([
     });
   });
 
+  describe("finalize", function() {
+    it("should transfer ownership to validator", async function() {
+      await increaseTimeTo(this.endTime + 1);
+      const tx = await this.crowdsale.finalize({ from: owner }).should.be
+        .fulfilled;
+      log(`finalize gasUsed: ${tx.receipt.gasUsed}`);
+      
+      (await this.token.owner()).should.be.equal(validator);
+    });
+  });
+
   describe("claim", function() {
     beforeEach(async function() {
       await increaseTimeTo(this.startTime);
