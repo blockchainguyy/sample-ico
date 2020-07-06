@@ -77,7 +77,57 @@ contract("Crowdsale", function([
     (await this.crowdsale.startTime()).should.be.bignumber.equal(
       this.startTime
     );
+    (await this.crowdsale.whiteListingContract()).should.equal(
+      this.whitelisting.address
+    );
     (await this.crowdsale.endTime()).should.be.bignumber.equal(this.endTime);
+  });
+
+  describe("setWhitelistContract", function() {
+    it("should be able to change whitelisting contract", async function() {
+      const newWhitelisting = await Whitelisting.new();
+
+      const { receipt } = await this.crowdsale.setWhitelistContract(
+        newWhitelisting.address,
+        { from: validator }
+      ).should.be.fulfilled;
+      log(`setWhitelistContract gasUsed: ${receipt.gasUsed}`);
+
+      (await this.crowdsale.whiteListingContract()).should.equal(
+        newWhitelisting.address
+      );
+    });
+
+    it("should not accept address(0)", async function() {
+      await this.crowdsale
+        .setWhitelistContract("0x0", { from: validator })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should reject if not called by validator", async function() {
+      const newWhitelisting = await Whitelisting.new();
+
+      await this.crowdsale
+        .setWhitelistContract(newWhitelisting.address, {
+          from: owner
+        })
+        .should.be.rejectedWith(VMExceptionRevert);
+    });
+
+    it("should log event", async function() {
+      const newWhitelisting = await Whitelisting.new();
+
+      const tx = await this.crowdsale.setWhitelistContract(
+        newWhitelisting.address,
+        { from: validator }
+      ).should.be.fulfilled;
+      log(`setWhitelistContract gasUsed: ${tx.receipt.gasUsed}`);
+
+      const event = tx.logs.find(e => e.event === "WhiteListingContractSet");
+
+      should.exist(event);
+      event.args._whiteListingContract.should.equal(newWhitelisting.address);
+    });
   });
 
   describe("buyTokens", function() {
