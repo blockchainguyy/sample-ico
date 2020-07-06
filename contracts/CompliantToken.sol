@@ -51,9 +51,9 @@ contract CompliantToken is Validator, MintableToken {
 
     event FeeRecipientSet(address indexed previousRecipient, address indexed newRecipient);
 
-    function setWhitelistContract(address reference) public onlyValidator {
-        require(reference != address(0));
-        whiteListingContract = Whitelist(reference);
+    function setWhitelistContract(address whitelistAddress) public onlyValidator {
+        require(whitelistAddress != address(0));
+        whiteListingContract = Whitelist(whitelistAddress);
         WhiteListingContractSet(whiteListingContract);
     }
 
