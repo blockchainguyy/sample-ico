@@ -122,6 +122,11 @@ contract CompliantCrowdsale is Ownable, Validator, Crowdsale {
         delete pendingMints[nonce];
     }
 
+    function finalization() internal {
+        transferOwnership(validator);
+        super.finalization();
+    }
+    
     function setTokenContract(address newToken) external 
     onlyOwner
     checkIsAddressValid(newToken) {
