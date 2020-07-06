@@ -845,6 +845,23 @@ contract("CompliantToken", function([
       pendingTransaction[3].should.be.bignumber.equal(new BigNumber(0));
     });
 
+    it("should decrease pending approval amount when using transfer", async function() {
+
+      const pendingApprovalAmountBefore = await this.token.pendingApprovalAmount(owner, "0x0000000000000000000000000000000000000000");
+
+      const tx = await this.token.rejectTransfer(0, this.reason, {
+        from: validator
+      }).should.be.fulfilled;
+      log(`rejectTransfer gasUsed: ${tx.receipt.gasUsed}`);
+
+      const pendingApprovalAmountAfter = await this.token.pendingApprovalAmount(owner, "0x0000000000000000000000000000000000000000");
+
+      pendingApprovalAmountBefore
+        .sub(transferFee)
+        .sub(allowedTransferAmount)
+        .should.be.bignumber.equal(pendingApprovalAmountAfter)
+    });
+
     it("should decrease pending approval amount when using transferFrom", async function() {
       const tx = await this.token.approve(
         approvedAddress,
